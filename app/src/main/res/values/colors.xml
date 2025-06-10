@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Basic Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- App Color Scheme -->
+    <color name="colorPrimary">#3D8D7A</color>
+    <color name="colorPrimaryVariant">#AB75E9CE</color>
+    <color name="colorSecondary">#B3D8A8</color>
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorSurface">#FBFFE4</color>
+    <color name="warning">#9EC4000E</color>
+
+    <!-- Text/Icon on Top of Backgrounds -->
+    <color name="colorOnPrimary">#FFFFFFFF</color>
+    <color name="colorOnBackground">#2D2D2D</color>
+    <color name="colorOnSurface">#515050</color>
+</resources>

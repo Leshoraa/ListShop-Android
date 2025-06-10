@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@color/colorBackground"
+    android:layout_height="match_parent"
+    tools:context=".ListActivity">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_shoplist"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="#00FFFFFF"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/constraintLayout3">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/cl_todo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_shoplist">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_todo"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                app:cardBackgroundColor="@color/colorPrimary"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                android:layout_marginTop="12dp"
+                app:layout_constraintEnd_toEndOf="@+id/edt_todo"
+                app:layout_constraintStart_toStartOf="@+id/edt_todo"
+                app:layout_constraintTop_toBottomOf="@+id/edt_todo">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:gravity="start|center"
+                    android:paddingStart="16dp"
+                    android:text="Shopping list"
+                    android:textColor="@color/colorBackground"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_dropdownMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="@font/ballega"
+                    android:gravity="end|center"
+                    android:paddingEnd="16dp"
+                    android:text="•••"
+                    android:textColor="@color/colorBackground"
+                    android:textSize="16sp" />
+            </androidx.cardview.widget.CardView>
+
+            <EditText
+                android:id="@+id/edt_todo"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_item"
+                android:fontFamily="@font/ttchocolatesdemibold"
+                android:hint="New List"
+                android:inputType="text"
+                android:maxLines="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="62dp"
+                android:textColor="@color/black"
+                android:textColorHint="#A2A2A2"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_addListBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:fontFamily="@font/ttchocolatesdemibold"
+                android:gravity="center"
+                android:text="+ Add"
+                android:textColor="#878787"
+                android:textSize="16sp"
+                android:layout_marginEnd="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/edt_todo"
+                app:layout_constraintEnd_toEndOf="@+id/edt_todo"
+                app:layout_constraintTop_toTopOf="@+id/edt_todo" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_todo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:clipToPadding="false"
+                android:paddingBottom="62dp"
+                android:scrollbarSize="0dp"
+                android:scrollbars="vertical"
+                app:layout_constraintHeight_max="280dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/edt_todo"
+                app:layout_constraintStart_toStartOf="@+id/edt_todo"
+                app:layout_constraintTop_toBottomOf="@+id/cv_todo" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="#00FFFFFF"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/cv_bt"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cv_shoplist">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:background="@color/colorBackground"
+            android:paddingBottom="36dp"
+            android:scrollbarSize="0dp"
+            android:scrollbars="vertical" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="@color/colorOnPrimary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="16dp"
+            android:src="@drawable/baseline_arrow_back_ios_new_24"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/black" />
+
+        <ImageView
+            android:id="@+id/todo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="16dp"
+            android:src="@drawable/baseline_pencil_24"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/colorOnSurface" />
+
+        <EditText
+            android:id="@+id/market_name"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:fontFamily="@font/comfortaabold"
+            android:hint="My Cart"
+            android:inputType="text"
+            android:backgroundTint="#809E9E9E"
+            android:maxLines="1"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textColorHint="@color/black"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_bt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/colorOnPrimary"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginVertical="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/cl_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/tv_listTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:fontFamily="@font/poppinsregular"
+                android:gravity="center"
+                android:text="Total :"
+                android:textColor="#8C8C8C"
+                android:textSize="12sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/btn_addItem" />
+
+            <TextView
+                android:id="@+id/tv_Total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppinsregular"
+                android:gravity="center"
+                android:maxLength="18"
+                android:text="120.0000"
+                android:textColor="@color/colorOnBackground"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="@+id/tv_listTotal"
+                app:layout_constraintTop_toBottomOf="@+id/tv_listTotal" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btn_addItem"
+                android:layout_width="102dp"
+                android:layout_height="40dp"
+                app:cardBackgroundColor="#AB75E9CE"
+                app:cardCornerRadius="100dp"
+                app:cardElevation="0dp"
+                android:layout_marginVertical="16dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" >
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:textAlignment="center"
+                    android:gravity="center"
+                    android:textSize="12sp"
+                    android:fontFamily="@font/comfortaabold"
+                    android:textColor="@color/black"
+                    android:text="Add Item"/>
+            </androidx.cardview.widget.CardView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
