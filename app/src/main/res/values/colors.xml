@@ -5,9 +5,10 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- App Color Scheme -->
-    <color name="colorPrimary">#3D8D7A</color>
-    <color name="colorPrimaryVariant">#AB75E9CE</color>
-    <color name="colorSecondary">#B3D8A8</color>
+    <color name="colorPrimary">#CFEDDB</color>
+    <color name="colorSecPrimary">#ADCFBB</color>
+    <color name="colorPrimaryVariant">#D4F4E1</color>
+    <color name="colorSecondary">#F0F0F0</color>
     <color name="colorBackground">#FFFFFF</color>
     <color name="colorSurface">#FBFFE4</color>
     <color name="warning">#9EC4000E</color>

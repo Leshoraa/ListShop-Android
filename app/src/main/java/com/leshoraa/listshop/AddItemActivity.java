@@ -19,6 +19,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
@@ -651,34 +652,41 @@ public class AddItemActivity extends AppCompatActivity {
             if (camera != null) {
                 releaseCamera();
             }
+
             camera = android.hardware.Camera.open();
             android.hardware.Camera.Parameters parameters = camera.getParameters();
-            DisplayMetrics metrics = getResources().getDisplayMetrics();
-            int targetSize = Math.min(metrics.widthPixels, metrics.heightPixels);
-            android.hardware.Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), targetSize, targetSize);
+
+            android.hardware.Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 4.0);
             if (optimalSize != null) {
                 parameters.setPreviewSize(optimalSize.width, optimalSize.height);
             }
+
             camera.setParameters(parameters);
-            android.hardware.Camera.CameraInfo camInfo = new android.hardware.Camera.CameraInfo();
-            android.hardware.Camera.getCameraInfo(android.hardware.Camera.CameraInfo.CAMERA_FACING_BACK, camInfo);
+
             setCameraDisplayOrientation(android.hardware.Camera.CameraInfo.CAMERA_FACING_BACK, camera);
+
             camera.setPreviewDisplay(holder);
             camera.startPreview();
-            android.hardware.Camera.Size previewSize = parameters.getPreviewSize();
-            float ratio = (float) previewSize.width / previewSize.height;
-            int surfaceWidth = binding.cameraPreview.getWidth();
-            int surfaceHeight = binding.cameraPreview.getHeight();
 
-            if (surfaceWidth / (float) surfaceHeight > ratio) {
-                surfaceWidth = (int) (surfaceHeight * ratio);
+            float targetRatio = 4f / 3f;
+            int parentWidth = binding.cameraPreview.getWidth();
+            int parentHeight = binding.cameraPreview.getHeight();
+
+            int newWidth, newHeight;
+
+            if ((float) parentWidth / parentHeight > targetRatio) {
+                newHeight = parentHeight;
+                newWidth = (int) (parentHeight * targetRatio);
             } else {
-                surfaceHeight = (int) (surfaceWidth / ratio);
+                newWidth = parentWidth;
+                newHeight = (int) (parentWidth / targetRatio);
             }
-            binding.cameraPreview.getLayoutParams().width = surfaceWidth;
-            binding.cameraPreview.getLayoutParams().height = surfaceHeight;
-            binding.cameraPreview.requestLayout();
 
+            ViewGroup.LayoutParams params = binding.cameraPreview.getLayoutParams();
+            params.width = newWidth;
+            params.height = newHeight;
+            binding.cameraPreview.setLayoutParams(params);
+            binding.cameraPreview.requestLayout();
 
         } catch (Exception e) {
             Toast.makeText(this, "Camera error: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -702,19 +710,12 @@ public class AddItemActivity extends AppCompatActivity {
         int rotation = displayRotation;
         int degrees = 0;
         switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                degrees = 270;
-                break;
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
         }
+
         int result;
         if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
             result = (info.orientation + degrees) % 360;
@@ -722,36 +723,29 @@ public class AddItemActivity extends AppCompatActivity {
         } else {
             result = (info.orientation - degrees + 360) % 360;
         }
+
         camera.setDisplayOrientation(result);
     }
 
-    private android.hardware.Camera.Size getOptimalPreviewSize(List<android.hardware.Camera.Size> sizes, int targetWidth, int targetHeight) {
+    private android.hardware.Camera.Size getOptimalPreviewSize(List<android.hardware.Camera.Size> sizes, double targetRatio) {
         final double ASPECT_TOLERANCE = 0.1;
-        double targetRatio = (double) targetWidth / targetHeight;
-        if (sizes == null) return null;
         android.hardware.Camera.Size optimalSize = null;
         double minDiff = Double.MAX_VALUE;
-        int targetDim = Math.min(targetWidth, targetHeight);
 
         for (android.hardware.Camera.Size size : sizes) {
             double ratio = (double) size.width / size.height;
             if (Math.abs(ratio - targetRatio) < ASPECT_TOLERANCE) {
-                if (Math.abs(size.height - targetDim) < minDiff) {
+                if (Math.abs(size.height - 720) < minDiff) {
                     optimalSize = size;
-                    minDiff = Math.abs(size.height - targetDim);
+                    minDiff = Math.abs(size.height - 720);
                 }
             }
         }
 
-        if (optimalSize == null) {
-            minDiff = Double.MAX_VALUE;
-            for (android.hardware.Camera.Size size : sizes) {
-                if (Math.abs(size.height - targetDim) < minDiff) {
-                    optimalSize = size;
-                    minDiff = Math.abs(size.height - targetDim);
-                }
-            }
+        if (optimalSize == null && !sizes.isEmpty()) {
+            optimalSize = sizes.get(0);
         }
+
         return optimalSize;
     }
 

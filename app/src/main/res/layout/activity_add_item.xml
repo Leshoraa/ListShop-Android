@@ -3,46 +3,37 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+    android:background="@color/colorBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".AddItemActivity">
 
-    <ImageView
-        android:id="@+id/back"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:padding="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:src="@drawable/baseline_arrow_back_ios_new_24"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/black" />
-
     <androidx.cardview.widget.CardView
         android:id="@+id/cvtop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:cardBackgroundColor="#AFFBEB"
-        app:cardCornerRadius="36dp"
+        app:cardCornerRadius="12dp"
+        app:layout_constraintDimensionRatio="4:3"
         app:cardElevation="0dp"
+        android:layout_margin="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/back">
+        app:layout_constraintTop_toTopOf="parent">
 
         <SurfaceView
             android:id="@+id/camera_preview"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            app:layout_constraintDimensionRatio="1:1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintDimensionRatio="4:3"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/imageViewCaptured"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:background="#AAAAAA"
             android:scaleType="centerCrop"
             android:visibility="invisible"
@@ -52,120 +43,277 @@
     </androidx.cardview.widget.CardView>
 
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/cl_top"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
+        android:layout_height="0dp"
         android:layout_marginTop="24dp"
+        android:layout_marginBottom="6dp"
+        android:scrollbarSize="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_saveItem"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/cvtop">
 
-        <EditText
-            android:id="@+id/edt_title"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/cl_top"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cv2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="20dp"
+                    app:cardBackgroundColor="@color/colorPrimary"
+                    app:cardCornerRadius="100dp"
+                    app:cardElevation="0dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" >
+
+                    <TextView
+                        android:id="@+id/textView3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="4dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:fontFamily="@font/ttchocolatesmedium"
+                        android:gravity="center"
+                        android:text="Title item : "
+                        android:textColor="@color/black"
+                        android:textSize="16sp"/>
+
+                </androidx.cardview.widget.CardView>
+
+                <EditText
+                    android:id="@+id/edt_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:paddingHorizontal="18dp"
+                    android:background="@drawable/bg_edt_add"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cv2" />
+
+                <TextView
+                    android:id="@+id/textView4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/ttchocolatesmedium"
+                    android:gravity="center"
+                    android:text="Description : "
+                    android:textColor="@color/colorOnSurface"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/edt_title" />
+
+                <EditText
+                    android:id="@+id/edt_desc"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:background="@drawable/bg_edt_add"
+                    android:maxLines="6"
+                    android:minHeight="48dp"
+                    android:paddingHorizontal="18dp"
+                    android:paddingVertical="12dp"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="@+id/edt_title"
+                    app:layout_constraintStart_toStartOf="@+id/edt_title"
+                    app:layout_constraintTop_toBottomOf="@+id/textView4" />
+
+                <TextView
+                    android:id="@+id/textView5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/ttchocolatesmedium"
+                    android:gravity="center"
+                    android:text="Category : "
+                    android:textColor="@color/colorOnSurface"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/edt_desc" />
+
+                <EditText
+                    android:id="@+id/edt_category"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:maxLines="1"
+                    android:background="@drawable/bg_edt_add"
+                    android:paddingHorizontal="18dp"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="@+id/edt_title"
+                    app:layout_constraintStart_toStartOf="@+id/edt_title"
+                    app:layout_constraintTop_toBottomOf="@+id/textView5" />
+
+                <TextView
+                    android:id="@+id/textView6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/ttchocolatesmedium"
+                    android:gravity="center"
+                    android:text="Price : "
+                    android:textColor="@color/colorOnSurface"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/edt_category" />
+
+                <EditText
+                    android:id="@+id/edt_price"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:inputType="number"
+                    android:paddingHorizontal="18dp"
+                    android:background="@drawable/bg_edt_add"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="@+id/edt_title"
+                    app:layout_constraintStart_toStartOf="@+id/edt_title"
+                    app:layout_constraintTop_toBottomOf="@+id/textView6" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/tv_discountTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/ttchocolatesmedium"
+                android:gravity="center"
+                android:text="Discount : "
+                android:textColor="@color/colorOnBackground"
+                android:textSize="20sp"
+                app:layout_constraintBottom_toBottomOf="@+id/constraintLayout"
+                app:layout_constraintStart_toStartOf="@+id/cl_top"
+                app:layout_constraintTop_toTopOf="@+id/constraintLayout" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginTop="14dp"
+                app:layout_constraintHeight_min="46dp"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/tv_discountTitle"
+                app:layout_constraintTop_toBottomOf="@+id/cl_top">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_edtDiscount"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/back"
+        android:layout_width="0dp"
+        android:layout_height="46dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/colorSecondary"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/cvtop">
+
+        <ImageView
+            android:layout_width="48dp"
             android:layout_height="48dp"
-            android:hint="Title"
-            android:paddingHorizontal="18dp"
-            android:background="@drawable/bg_edt_add"
-            android:fontFamily="@font/ttchocolatesdemibold"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:padding="16dp"
+            android:src="@drawable/baseline_arrow_back_ios_new_24"
+            app:tint="@color/black" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clquantity"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/bg_edt_quantity"
+        app:layout_constraintStart_toEndOf="@id/back"
+        app:layout_constraintBottom_toBottomOf="@+id/back"
+        app:layout_constraintTop_toTopOf="@+id/back">
+
+        <TextView
+            android:id="@+id/tv_reducequantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/ttchocolatesmedium"
+            android:gravity="center"
+            android:text="   -   "
+            android:textAlignment="center"
+            android:textColor="@color/colorSecPrimary"
+            android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <EditText
-            android:id="@+id/edt_desc"
-            android:layout_width="0dp"
+            android:id="@+id/edt_quantity"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="#00FFFFFF"
+            android:fontFamily="@font/ttchocolatesdemibold"
             android:minHeight="48dp"
-            android:maxLines="6"
-            android:hint="desc (opsional)"
             android:paddingHorizontal="18dp"
             android:paddingVertical="12dp"
             android:textSize="16sp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_edt_add"
-            android:fontFamily="@font/ttchocolatesdemibold"
-            app:layout_constraintEnd_toEndOf="@+id/edt_title"
-            app:layout_constraintStart_toStartOf="@+id/edt_title"
-            app:layout_constraintTop_toBottomOf="@+id/edt_title" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tv_addquantity"
+            app:layout_constraintStart_toEndOf="@id/tv_reducequantity"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <EditText
-            android:id="@+id/edt_category"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_edt_add"
-            android:fontFamily="@font/ttchocolatesdemibold"
-            android:hint="category"
-            android:paddingHorizontal="18dp"
-            android:layout_marginTop="12dp"
-            android:maxLines="1"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="@+id/edt_title"
-            app:layout_constraintStart_toStartOf="@+id/edt_title"
-            app:layout_constraintTop_toBottomOf="@+id/edt_desc" />
-
-        <EditText
-            android:id="@+id/edt_price"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_edt_add"
-            android:fontFamily="@font/ttchocolatesdemibold"
-            android:hint="Price"
-            android:inputType="number"
-            android:paddingHorizontal="18dp"
-            android:layout_marginTop="12dp"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="@+id/edt_title"
-            app:layout_constraintStart_toStartOf="@+id/edt_title"
-            app:layout_constraintTop_toBottomOf="@+id/edt_category" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <TextView
-        android:id="@+id/tv_discountTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="Discount : "
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/ttchocolatesmedium"
-        android:textColor="@color/colorOnBackground"
-        android:textSize="20sp"
-        app:layout_constraintStart_toStartOf="@+id/cl_top"
-        app:layout_constraintTop_toTopOf="@+id/constraintLayout" />
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/constraintLayout"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="14dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_saveItem"
-        app:layout_constraintEnd_toEndOf="@+id/cl_top"
-        app:layout_constraintStart_toEndOf="@+id/tv_discountTitle"
-        app:layout_constraintTop_toBottomOf="@+id/cl_top">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_edtDiscount"
+        <TextView
+            android:id="@+id/tv_addquantity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:fontFamily="@font/ttchocolatesmedium"
+            android:gravity="center"
+            android:text="   +   "
+            android:textAlignment="center"
+            android:textColor="@color/colorSecPrimary"
+            android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.cardview.widget.CardView
         android:id="@+id/btn_saveItem"
         android:layout_width="0dp"
         android:layout_height="46dp"
+        android:layout_marginStart="12dp"
         android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/colorPrimary"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="10dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/cl_top"
-        app:layout_constraintStart_toStartOf="@+id/cl_top">
+        app:layout_constraintEnd_toEndOf="@+id/cvtop"
+        app:layout_constraintStart_toEndOf="@+id/clquantity">
 
         <TextView
             android:id="@+id/tv_saveItem"
@@ -176,7 +324,7 @@
             android:gravity="center"
             android:text="Save Item"
             android:textAlignment="center"
-            android:textColor="@color/colorBackground"
+            android:textColor="@color/black"
             android:textSize="14sp" />
     </androidx.cardview.widget.CardView>
 
