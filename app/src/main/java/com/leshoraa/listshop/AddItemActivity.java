@@ -220,6 +220,31 @@ public class AddItemActivity extends AppCompatActivity {
 
         binding.back.setOnClickListener(v -> onBackPressed());
 
+        binding.tvReducequantity.setOnClickListener(v -> {
+            try {
+                int currentQuantity = Integer.parseInt(binding.edtQuantity.getText().toString());
+
+                if (currentQuantity > 0) {
+                    currentQuantity--;
+                    binding.edtQuantity.setText(String.valueOf(currentQuantity));
+                }
+
+            } catch (NumberFormatException e) {
+                binding.edtQuantity.setText("0");
+            }
+        });
+
+        binding.tvAddquantity.setOnClickListener(v -> {
+            try {
+                int currentQuantity = Integer.parseInt(binding.edtQuantity.getText().toString());
+                currentQuantity++;
+                binding.edtQuantity.setText(String.valueOf(currentQuantity));
+
+            } catch (NumberFormatException e) {
+                binding.edtQuantity.setText("1");
+            }
+        });
+
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
         decimalFormat = new DecimalFormat("#,##0", symbols);
@@ -328,6 +353,8 @@ public class AddItemActivity extends AppCompatActivity {
                     binding.imageViewCaptured.setImageBitmap(capturedImageBitmap);
                     binding.imageViewCaptured.setVisibility(View.VISIBLE);
                     binding.cameraPreview.setVisibility(View.GONE);
+                    binding.edtQuantity.setText("1");
+
                     currentModelIndex = 0;
                     analyzeImageWithGemini(capturedImageBitmap);
                 }
@@ -748,43 +775,89 @@ public class AddItemActivity extends AppCompatActivity {
 
         return optimalSize;
     }
+    private String addDiscountData() {
+        JSONArray discountsJsonArray = new JSONArray();
+        double sumOfDiscounts = 0.0;
 
+        for (int i = 0; i < discountAdapter.getItemCount() - 1; i++) {
+            String discountStr = discountAdapter.getDiscountAt(i);
+            if (!discountStr.trim().isEmpty()) {
+                try {
+                    double discountValue = Double.parseDouble(discountStr);
+                    if (discountValue < 0 || discountValue > 100) {
+                        Toast.makeText(this, "Discount must be between 0 and 100.", Toast.LENGTH_SHORT).show();
+                        return null;
+                    }
+                    discountsJsonArray.put(discountValue);
+                    sumOfDiscounts += discountValue;
+                } catch (NumberFormatException | JSONException e) {
+                    Toast.makeText(this, "Invalid discount value: " + discountStr, Toast.LENGTH_SHORT).show();
+                    return null;
+                }
+            }
+        }
+
+        if (sumOfDiscounts >= 100.0) {
+            Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+
+        return discountsJsonArray.toString();
+    }
     private void addItemToDatabase() {
         String name = binding.edtTitle.getText().toString();
         String description = binding.edtDesc.getText().toString();
         String category = binding.edtCategory.getText().toString();
-        int count = 1;
+
+        int count;
+        try {
+            count = Integer.parseInt(binding.edtQuantity.getText().toString());
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid quantity amount.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (count < 1) {
+            Toast.makeText(this, "Minimum quantity must be 1 to save the item.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         double price = 0.0;
         try {
             String priceString = binding.edtPrice.getText().toString();
             String cleanPriceString = priceString.replaceAll("[.]", "");
-            price = Double.parseDouble(cleanPriceString);
+            if (cleanPriceString.isEmpty()) {
+                price = 0.0;
+            } else {
+                price = Double.parseDouble(cleanPriceString);
+            }
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Masukkan harga yang valid.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        double totalBasePrice = price * count;
+
+        String discountsJson = addDiscountData();
+        if (discountsJson == null) {
             return;
         }
 
-        JSONArray discountsJsonArray = new JSONArray();
+        JSONArray discountsJsonArray;
         double sumOfDiscounts = 0.0;
-        for (String discountStr : discountItems) {
-            if (!discountStr.trim().isEmpty()) {
-                try {
-                    double discountValue = Double.parseDouble(discountStr);
-                    discountsJsonArray.put(discountValue);
-                    sumOfDiscounts += discountValue;
-                } catch (NumberFormatException | JSONException e) {
-                    Toast.makeText(this, "Nilai diskon tidak valid: " + discountStr, Toast.LENGTH_SHORT).show();
-                    return;
-                }
+        try {
+            discountsJsonArray = new JSONArray(discountsJson);
+            for (int i = 0; i < discountsJsonArray.length(); i++) {
+                sumOfDiscounts += discountsJsonArray.getDouble(i);
             }
+        } catch (JSONException e) {
+            Toast.makeText(this, "An error occurred while processing discounts.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
         double finalPrice;
         if (sumOfDiscounts >= 100.0) {
             finalPrice = 0.0;
         } else {
-            finalPrice = calculateFinalPrice(price, discountsJsonArray);
+            finalPrice = calculateFinalPrice(totalBasePrice, discountsJsonArray);
         }
 
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
@@ -800,19 +873,19 @@ public class AddItemActivity extends AppCompatActivity {
         newItem.setCategory(category);
         newItem.setImageData(imageData);
         newItem.setPrice(price);
-        newItem.setDiscountsJson(discountsJsonArray.toString());
         newItem.setFinalPrice(finalPrice);
         newItem.setItemListId(item_list_id);
         newItem.setParentListId(parentListIdFromIntent);
         newItem.setTotalDiscountPercentage(sumOfDiscounts);
+        newItem.setDiscountsJson(discountsJson);
 
         long newRowId = dbHelper.addItem(newItem);
 
         if (newRowId != -1) {
-            Toast.makeText(this, "Item berhasil ditambahkan!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Item added successfully!", Toast.LENGTH_SHORT).show();
             finish();
         } else {
-            Toast.makeText(this, "Gagal menambahkan item.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to add item.", Toast.LENGTH_SHORT).show();
         }
     }
 

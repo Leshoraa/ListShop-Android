@@ -14,15 +14,16 @@
         android:layout_height="0dp"
         app:cardBackgroundColor="#AFFBEB"
         app:cardCornerRadius="12dp"
+        android:layout_marginTop="12dp"
         app:layout_constraintDimensionRatio="4:3"
         app:cardElevation="0dp"
-        android:layout_margin="16dp"
+        android:layout_marginHorizontal="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/imageView"
+            android:id="@+id/imageViewCaptured"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#AAAAAA"
@@ -37,7 +38,7 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="6dp"
         android:scrollbarSize="0dp"
         app:layout_constraintBottom_toTopOf="@+id/btn_saveItem"
@@ -64,7 +65,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:layout_marginBottom="20dp"
-                    app:cardBackgroundColor="@color/colorPrimary"
+                    app:cardBackgroundColor="#D1EDDC"
                     app:cardCornerRadius="100dp"
                     app:cardElevation="0dp"
                     app:layout_constraintStart_toStartOf="parent"
@@ -78,7 +79,7 @@
                         android:layout_marginHorizontal="16dp"
                         android:fontFamily="@font/ttchocolatesmedium"
                         android:gravity="center"
-                        android:text="Title item : "
+                        android:text="Title item"
                         android:textColor="@color/black"
                         android:textSize="16sp"/>
 
@@ -89,8 +90,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
-                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:fontFamily="@font/ttchocolatesmedium"
                     android:paddingHorizontal="18dp"
+                    android:privateImeOptions="noExtractUi"
                     android:background="@drawable/bg_edt_add"
                     android:textSize="16sp"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -115,9 +117,10 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:fontFamily="@font/ttchocolatesmedium"
                     android:background="@drawable/bg_edt_add"
                     android:maxLines="6"
+                    android:privateImeOptions="noExtractUi"
                     android:minHeight="48dp"
                     android:paddingHorizontal="18dp"
                     android:paddingVertical="12dp"
@@ -144,11 +147,13 @@
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginTop="6dp"
-                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:fontFamily="@font/ttchocolatesmedium"
                     android:maxLines="1"
                     android:background="@drawable/bg_edt_add"
+                    android:privateImeOptions="noExtractUi"
                     android:paddingHorizontal="18dp"
                     android:textSize="16sp"
+                    android:textColor="#639378"
                     app:layout_constraintEnd_toEndOf="@+id/edt_title"
                     app:layout_constraintStart_toStartOf="@+id/edt_title"
                     app:layout_constraintTop_toBottomOf="@+id/textView5" />
@@ -171,7 +176,7 @@
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginTop="6dp"
-                    android:fontFamily="@font/ttchocolatesdemibold"
+                    android:fontFamily="@font/ttchocolatesmedium"
                     android:inputType="number"
                     android:paddingHorizontal="18dp"
                     android:background="@drawable/bg_edt_add"
@@ -191,61 +196,30 @@
                 android:text="Discount : "
                 android:textColor="@color/colorOnBackground"
                 android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="@+id/cv"
+                app:layout_constraintBottom_toBottomOf="@+id/constraintLayout"
                 app:layout_constraintStart_toStartOf="@+id/cl_top"
-                app:layout_constraintTop_toTopOf="@+id/cv" />
+                app:layout_constraintTop_toTopOf="@+id/constraintLayout" />
 
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cv"
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="#A9D1F8C3"
-                app:cardCornerRadius="100dp"
-                app:cardElevation="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                app:layout_constraintHeight_min="46dp"
+                android:layout_marginBottom="16dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/tv_discountTitle"
                 app:layout_constraintTop_toBottomOf="@+id/cl_top">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_edtDiscount"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-
-                    <TextView
-                        android:id="@+id/tv_Discount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:layout_marginVertical="4dp"
-                        android:gravity="center"
-                        android:paddingHorizontal="24dp"
-                        android:text="0"
-                        android:textAlignment="center"
-                        android:textColor="@color/black"
-                        android:textColorHint="#636363"
-                        android:textSize="16sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <TextView
-                        android:id="@+id/tv_persen"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        android:fontFamily="@font/ttchocolatesdemibold"
-                        android:gravity="center"
-                        android:text="%"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@+id/tv_Discount"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </androidx.cardview.widget.CardView>
+                    android:layout_height="match_parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
@@ -302,6 +276,7 @@
             android:minHeight="48dp"
             android:paddingHorizontal="18dp"
             android:paddingVertical="12dp"
+            android:inputType="number"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/tv_addquantity"

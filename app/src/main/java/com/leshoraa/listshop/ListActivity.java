@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 import android.util.Log;
@@ -124,12 +125,10 @@ public class ListActivity extends AppCompatActivity {
 
         binding.marketName.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
             public void afterTextChanged(Editable s) {
@@ -150,22 +149,14 @@ public class ListActivity extends AppCompatActivity {
 
         binding.todo.setOnClickListener(v -> toggleTodoVisibility());
 
-        binding.tvAddListBtn.setOnClickListener(v -> {
-            String todoName = binding.edtTodo.getText().toString().trim();
-            if (!todoName.isEmpty()) {
-                Item newTodoItem = new Item(0, todoName, 0, false, null);
-                newTodoItem.setParentListId(currentParentListId);
-                long newTodoId = dbHelper.addTodoItem(newTodoItem);
-                if (newTodoId != -1) {
-                    newTodoItem.setId((int) newTodoId);
-                    loadTodoItems();
-                    binding.edtTodo.setText("");
-                } else {
-                    Toast.makeText(ListActivity.this, "Failed to add todo item.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(ListActivity.this, "Todo item name cannot be empty.", Toast.LENGTH_SHORT).show();
+        binding.tvAddListBtn.setOnClickListener(v -> addTodoItemToList());
+
+        binding.edtTodo.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                addTodoItemToList();
+                return true;
             }
+            return false;
         });
 
         binding.tvDropdownMenu.setOnClickListener(this::showPopupMenu);
@@ -197,6 +188,10 @@ public class ListActivity extends AppCompatActivity {
             Intent intent = new Intent(ListActivity.this, PreviewItemActivity.class);
             intent.putExtra(EXTRA_SELECTED_ITEM_ID, selectedItem.getId());
             startActivity(intent);
+        });
+
+        itemListAdapter.setOnItemQuantityChangeListener((itemId, newQuantity) -> {
+            loadItems();
         });
     }
 
@@ -248,16 +243,42 @@ public class ListActivity extends AppCompatActivity {
             todoList.clear();
             todoList.addAll(dbHelper.getTodoItemsByParentListId(currentParentListId));
             shopListAdapter.notifyDataSetChanged();
+            updateShopListCount();
         }
     }
 
     private void updateTotalPrice() {
         double total = 0.0;
         for (Item item : itemsList) {
-            total += item.getFinalPrice() * item.getCount();
+            total += item.getFinalPrice();
         }
         binding.tvTotal.setText(decimalFormat.format(total));
     }
+
+    private void addTodoItemToList() {
+        String todoName = binding.edtTodo.getText().toString().trim();
+        if (!todoName.isEmpty()) {
+            Item newTodoItem = new Item(0, todoName, 0, false, null);
+            newTodoItem.setParentListId(currentParentListId);
+            long newTodoId = dbHelper.addTodoItem(newTodoItem);
+            if (newTodoId != -1) {
+                newTodoItem.setId((int) newTodoId);
+                loadTodoItems();
+                binding.edtTodo.setText("");
+            } else {
+                Toast.makeText(ListActivity.this, "Failed to add todo item.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(ListActivity.this, "Todo item name cannot be empty.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateShopListCount() {
+        int count = todoList.size();
+        binding.tvShoplistCount.setText(String.valueOf(count));
+        //binding.flShoplistCount.setVisibility(count > 0 ? View.VISIBLE : View.GONE); // Hide if count is 0
+    }
+
 
     private void toggleTodoVisibility() {
         TransitionManager.beginDelayedTransition(binding.getRoot(), new TransitionSet()
@@ -315,6 +336,7 @@ public class ListActivity extends AppCompatActivity {
             }
             todoList.clear();
             shopListAdapter.notifyDataSetChanged();
+            updateShopListCount();
         }
     }
 

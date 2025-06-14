@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:background="@color/colorBackground"
-    android:layout_height="116dp">
+    android:layout_height="118dp">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cv"
@@ -29,11 +29,10 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Itemsdasdaasdasdasdasdasdasdasdaads"
-        android:fontFamily="@font/ttchocolatesdemibold"
+        android:fontFamily="@font/smgl"
         android:maxLength="18"
         android:textColor="@color/colorOnBackground"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:textSize="26sp"
         android:layout_marginStart="12dp"
         app:layout_constraintStart_toEndOf="@+id/cv"
         app:layout_constraintTop_toTopOf="@+id/cv" />
@@ -42,12 +41,12 @@
         android:id="@+id/tv_listCategory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/poppinsregular"
         android:gravity="center"
         android:text="fruit"
-        android:fontFamily="@font/poppinsregular"
         android:textColor="#8C8C8C"
-        android:layout_marginTop="4dp"
         android:textSize="12sp"
+        app:layout_constraintBottom_toTopOf="@+id/cv2"
         app:layout_constraintStart_toStartOf="@+id/tv_listTitle"
         app:layout_constraintTop_toBottomOf="@+id/tv_listTitle" />
 
@@ -55,12 +54,12 @@
         android:id="@+id/cv2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
         android:backgroundTint="#5C92F6C2"
         app:cardCornerRadius="16dp"
         app:cardElevation="0dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toStartOf="@+id/tv_listTitle"
-        app:layout_constraintTop_toBottomOf="@+id/tv_listCategory">
+        app:layout_constraintBottom_toBottomOf="@+id/cv"
+        app:layout_constraintStart_toStartOf="@+id/tv_listTitle">
 
         <TextView
             android:id="@+id/tv_listPrice"
@@ -68,14 +67,71 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
             android:layout_marginVertical="2dp"
-            android:fontFamily="@font/ttchocolatesmedium"
             android:gravity="center"
-            android:text="29.000"
+            android:text="29000000000000000000000000000000"
+            android:maxLength="15"
             android:textColor="@color/colorOnSurface"
             android:textSize="14sp"
+            android:fontFamily="@font/ttchocolatesmedium"
             app:layout_constraintBottom_toBottomOf="@+id/cv"
             app:layout_constraintStart_toStartOf="@+id/tv_listTitle" />
     </androidx.cardview.widget.CardView>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clquantity"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_edt_quantity"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toEndOf="@id/cv2"
+        app:layout_constraintTop_toTopOf="@+id/cv2"
+        app:layout_constraintBottom_toBottomOf="@+id/cv2">
+
+        <TextView
+            android:id="@+id/tv_reducequantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/ttchocolatesmedium"
+            android:gravity="center"
+            android:text="   -   "
+            android:textAlignment="center"
+            android:textColor="@color/colorSecPrimary"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <EditText
+            android:id="@+id/edt_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#00FFFFFF"
+            android:textSize="14sp"
+            android:fontFamily="@font/ttchocolatesmedium"
+            android:inputType="number"
+            android:minHeight="48dp"
+            android:paddingHorizontal="12dp"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tv_addquantity"
+            app:layout_constraintStart_toEndOf="@id/tv_reducequantity"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_addquantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/ttchocolatesmedium"
+            android:gravity="center"
+            android:text="   +   "
+            android:textAlignment="center"
+            android:textColor="@color/colorSecPrimary"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ImageView
         android:id="@+id/delete_item"

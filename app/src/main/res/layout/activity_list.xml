@@ -40,26 +40,62 @@
                 app:layout_constraintStart_toStartOf="@+id/edt_todo"
                 app:layout_constraintTop_toBottomOf="@+id/edt_todo">
 
-                <TextView
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:fontFamily="@font/ttchocolatesdemibold"
-                    android:gravity="start|center"
-                    android:paddingStart="16dp"
-                    android:text="Shopping list"
-                    android:textColor="@color/colorBackground"
-                    android:textSize="16sp" />
+                    android:layout_height="match_parent">
 
-                <TextView
-                    android:id="@+id/tv_dropdownMenu"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:fontFamily="@font/ballega"
-                    android:gravity="end|center"
-                    android:paddingEnd="16dp"
-                    android:text="•••"
-                    android:textColor="@color/colorBackground"
-                    android:textSize="16sp" />
+                    <TextView
+                        android:id="@+id/title_shoplist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:fontFamily="@font/ttchocolatesmedium"
+                        android:gravity="center_vertical"
+                        android:paddingStart="16dp"
+                        android:text="Shopping list"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                    <FrameLayout
+                        android:id="@+id/fl_shoplist_count"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_circled_count_item"
+                        android:visibility="visible"
+                        app:layout_constraintStart_toEndOf="@+id/title_shoplist"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <TextView
+                            android:id="@+id/tv_shoplist_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textColor="@color/black"
+                            android:textSize="10sp"
+                            android:fontFamily="@font/ttchocolatesmedium"
+                            tools:text="99" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/tv_dropdownMenu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:fontFamily="@font/ballega"
+                        android:gravity="center_vertical"
+                        android:paddingEnd="16dp"
+                        android:text="•••"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.cardview.widget.CardView>
 
             <EditText
@@ -78,6 +114,7 @@
                 android:textColor="@color/black"
                 android:textColorHint="#A2A2A2"
                 android:textSize="16sp"
+                android:imeOptions="actionDone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -238,7 +275,7 @@
                 android:id="@+id/btn_addItem"
                 android:layout_width="102dp"
                 android:layout_height="40dp"
-                app:cardBackgroundColor="#AB75E9CE"
+                app:cardBackgroundColor="#D5F2E1"
                 app:cardCornerRadius="100dp"
                 app:cardElevation="0dp"
                 android:layout_marginVertical="16dp"

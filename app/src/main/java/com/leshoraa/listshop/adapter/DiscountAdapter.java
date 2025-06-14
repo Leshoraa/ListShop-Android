@@ -52,7 +52,17 @@ public class DiscountAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public DiscountAdapter(List<String> discounts) {
         this.discounts = discounts;
     }
-
+    public String getDiscountAt(int position) {
+        if (position < discounts.size()) {
+            return discounts.get(position);
+        }
+        return "";
+    }
+    public void updateData(List<String> newDiscounts) {
+        this.discounts.clear();
+        this.discounts.addAll(newDiscounts);
+        notifyDataSetChanged();
+    }
     @Override
     public int getItemViewType(int position) {
         if (position == discounts.size()) {

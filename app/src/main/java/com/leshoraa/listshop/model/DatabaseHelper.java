@@ -1,11 +1,16 @@
 package com.leshoraa.listshop.model;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+
 import java.io.File;
 
 import java.util.ArrayList;
@@ -123,214 +128,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    public long addItem(Item item) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_ITEM_LIST_ITEM_ID, item.getItemListId());
-        values.put(COLUMN_ITEM_LIST_NAME, item.getName());
-        values.put(COLUMN_ITEM_LIST_COUNT, item.getCount());
-        values.put(COLUMN_ITEM_LIST_IS_ADD_BUTTON, item.isAddButton() ? 1 : 0);
-        values.put(COLUMN_ITEM_LIST_DATE, item.getDate());
-        values.put(COLUMN_ITEM_LIST_DESCRIPTION, item.getDescription());
-        values.put(COLUMN_ITEM_LIST_CATEGORY, item.getCategory());
-        values.put(COLUMN_ITEM_LIST_IMAGE_DATA, item.getImageData());
-        values.put(COLUMN_ITEM_LIST_PRICE, item.getPrice());
-        values.put(COLUMN_ITEM_LIST_DISCOUNTS_JSON, item.getDiscountsJson());
-        values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
-        values.put(COLUMN_ITEM_LIST_PARENT_LIST_ID, item.getParentListId());
-        values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
-
-        long id = db.insert(TABLE_ITEM_LIST, null, values);
-        if (id == -1) {
-            Log.e(TAG, "Failed to insert item: " + item.getName());
-        } else {
-            Log.d(TAG, "Item added with ID: " + id + ", Name: " + item.getName());
-        }
-        db.close();
-        return id;
-    }
-
-    public long addTodoItem(Item todoItem) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_TODO_NAME, todoItem.getName());
-        values.put(COLUMN_TODO_IS_CHECKED, todoItem.isAddButton() ? 1 : 0);
-        values.put(COLUMN_TODO_PARENT_LIST_ID, todoItem.getParentListId());
-
-        long id = db.insert(TABLE_TODO_LIST, null, values);
-        if (id == -1) {
-            Log.e(TAG, "Failed to insert todo item: " + todoItem.getName());
-        } else {
-            Log.d(TAG, "Todo item added with ID: " + id + ", Name: " + todoItem.getName());
-        }
-        db.close();
-        return id;
-    }
-
-    public List<Item> getMarkets() {
-        List<Item> marketList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_MARKETS;
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_MARKET_ID));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_NAME));
-                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_DATE));
-
-                int listItemCount = getListItemCountForMarket(id);
-
-                Item marketItem = new Item(id, name, listItemCount, false, date);
-                marketList.add(marketItem);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        db.close();
-        Log.d(TAG, "getMarkets: Retrieved " + marketList.size() + " markets.");
-        return marketList;
-    }
-
-    public Item getMarketById(int marketId) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_MARKETS,
-                new String[]{COLUMN_MARKET_ID, COLUMN_MARKET_NAME, COLUMN_MARKET_COUNT, COLUMN_MARKET_DATE},
-                COLUMN_MARKET_ID + " = ?",
-                new String[]{String.valueOf(marketId)},
-                null, null, null);
-
-        Item market = null;
-        if (cursor.moveToFirst()) {
-            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_MARKET_ID));
-            String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_NAME));
-            int count = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_MARKET_COUNT));
-            String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_DATE));
-            market = new Item(id, name, count, false, date);
-            Log.d(TAG, "getMarketById: Found market with ID: " + marketId + ", Name: " + name);
-        } else {
-            Log.d(TAG, "getMarketById: No market found with ID: " + marketId);
-        }
-        cursor.close();
-        db.close();
-        return market;
-    }
-    public void updateMarketName(int marketId, String newName) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_MARKET_NAME, newName);
-
-        int rowsAffected = db.update(TABLE_MARKETS, values, COLUMN_MARKET_ID + " = ?",
-                new String[]{String.valueOf(marketId)});
-        db.close();
-        Log.d(TAG, "updateMarketName: Market ID " + marketId + " updated, rows affected: " + rowsAffected);
-    }
-
-    public int getListItemCountForMarket(int marketId) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        String countQuery = "SELECT COUNT(*) FROM " + TABLE_ITEM_LIST + " WHERE " + COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?";
-        Cursor cursor = db.rawQuery(countQuery, new String[]{String.valueOf(marketId)});
-        int count = 0;
-        if (cursor.moveToFirst()) {
-            count = cursor.getInt(0);
-        }
-        cursor.close();
-        db.close();
-        Log.d(TAG, "getListItemCountForMarket: Market ID " + marketId + " has " + count + " items.");
-        return count;
-    }
-
-    public List<Item> getItemsByParentListId(int parentListId) {
-        List<Item> itemList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_ITEM_LIST + " WHERE " + COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?";
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, new String[]{String.valueOf(parentListId)});
-
-        if (cursor.moveToFirst()) {
-            do {
-                Item item = createItemFromCursor(cursor);
-                itemList.add(item);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        db.close();
-        Log.d(TAG, "getItemsByParentListId: Parent ID " + parentListId + " has " + itemList.size() + " items.");
-        return itemList;
-    }
-
-    public List<Item> getTodoItemsByParentListId(int parentListId) {
-        List<Item> todoItemList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_TODO_LIST + " WHERE " + COLUMN_TODO_PARENT_LIST_ID + " = ?";
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, new String[]{String.valueOf(parentListId)});
-
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TODO_ID));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TODO_NAME));
-                boolean isChecked = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TODO_IS_CHECKED)) == 1;
-                Item todoItem = new Item(id, name, 0, isChecked, null);
-                todoItem.setParentListId(parentListId);
-                todoItemList.add(todoItem);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        db.close();
-        Log.d(TAG, "getTodoItemsByParentListId: Parent ID " + parentListId + " has " + todoItemList.size() + " todo items.");
-        return todoItemList;
-    }
-
-    public Item getItemById(int itemId) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_ITEM_LIST, null, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?", new String[]{String.valueOf(itemId)}, null, null, null);
-        Item item = null;
-        if (cursor.moveToFirst()) {
-            item = createItemFromCursor(cursor);
-            Log.d(TAG, "getItemById: Found item with ID: " + itemId + ", Name: " + item.getName());
-        } else {
-            Log.d(TAG, "getItemById: No item found with ID: " + itemId);
-        }
-        cursor.close();
-        db.close();
-        return item;
-    }
-
-    public int updateTodoItem(Item todoItem) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_TODO_NAME, todoItem.getName());
-        values.put(COLUMN_TODO_IS_CHECKED, todoItem.isAddButton() ? 1 : 0);
-
-        int rowsAffected = db.update(TABLE_TODO_LIST, values, COLUMN_TODO_ID + " = ?",
-                new String[]{String.valueOf(todoItem.getId())});
-        db.close();
-        Log.d(TAG, "updateTodoItem: Todo item ID " + todoItem.getId() + " updated, rows affected: " + rowsAffected);
-        return rowsAffected;
-    }
-
-    public int updateItem(Item item) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_ITEM_LIST_ITEM_ID, item.getItemListId());
-        values.put(COLUMN_ITEM_LIST_NAME, item.getName());
-        values.put(COLUMN_ITEM_LIST_COUNT, item.getCount());
-        values.put(COLUMN_ITEM_LIST_IS_ADD_BUTTON, item.isAddButton() ? 1 : 0);
-        values.put(COLUMN_ITEM_LIST_DATE, item.getDate());
-        values.put(COLUMN_ITEM_LIST_DESCRIPTION, item.getDescription());
-        values.put(COLUMN_ITEM_LIST_CATEGORY, item.getCategory());
-        values.put(COLUMN_ITEM_LIST_IMAGE_DATA, item.getImageData());
-        values.put(COLUMN_ITEM_LIST_PRICE, item.getPrice());
-        values.put(COLUMN_ITEM_LIST_DISCOUNTS_JSON, item.getDiscountsJson());
-        values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
-        values.put(COLUMN_ITEM_LIST_PARENT_LIST_ID, item.getParentListId());
-        values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
-
-        int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
-                new String[]{String.valueOf(item.getId())});
-        db.close();
-        Log.d(TAG, "updateItem: Item ID " + item.getId() + " updated, rows affected: " + rowsAffected);
-        return rowsAffected;
-    }
-
     public void deleteMarket(int marketId) {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -374,73 +171,397 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public void deleteItem(int itemId) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        String imagePathToDelete = null;
-        Cursor cursor = db.query(TABLE_ITEM_LIST,
-                new String[]{COLUMN_ITEM_LIST_IMAGE_DATA},
-                COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
-                new String[]{String.valueOf(itemId)},
-                null, null, null);
+    public List<Item> getMarkets() {
+        List<Item> marketList = new ArrayList<>();
+        String selectQuery = "SELECT * FROM " + TABLE_MARKETS;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
-            imagePathToDelete = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_IMAGE_DATA));
+            do {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_MARKET_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_NAME));
+                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MARKET_DATE));
+
+                int listItemCount = getListItemCountForMarket(id);
+
+                Item marketItem = new Item(id, name, listItemCount, false, date);
+                marketList.add(marketItem);
+            } while (cursor.moveToNext());
         }
         cursor.close();
-
-        int rowsAffected = db.delete(TABLE_ITEM_LIST, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?", new String[]{String.valueOf(itemId)});
         db.close();
-        Log.d(TAG, "deleteItem: Item ID " + itemId + " deleted from DB. Rows affected: " + rowsAffected);
+        Log.d(TAG, "getMarkets: Retrieved " + marketList.size() + " markets.");
+        return marketList;
+    }
 
-        if (context != null && imagePathToDelete != null && !imagePathToDelete.isEmpty()) {
-            File file = new File(context.getFilesDir(), imagePathToDelete);
-            if (file.exists()) {
-                if (file.delete()) {
-                    Log.d(TAG, "deleteItem: Deleted image file: " + file.getAbsolutePath());
-                } else {
-                    Log.e(TAG, "deleteItem: Failed to delete image file: " + file.getAbsolutePath());
+    public int getListItemCountForMarket(int marketId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String countQuery = "SELECT COUNT(*) FROM " + TABLE_ITEM_LIST + " WHERE " + COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?";
+        Cursor cursor = db.rawQuery(countQuery, new String[]{String.valueOf(marketId)});
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        db.close();
+        Log.d(TAG, "getListItemCountForMarket: Market ID " + marketId + " has " + count + " items.");
+        return count;
+    }
+
+    public long addItem(Item item) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ITEM_LIST_ITEM_ID, item.getItemListId());
+        values.put(COLUMN_ITEM_LIST_NAME, item.getName());
+        values.put(COLUMN_ITEM_LIST_COUNT, item.getCount());
+        values.put(COLUMN_ITEM_LIST_IS_ADD_BUTTON, item.isAddButton() ? 1 : 0);
+        values.put(COLUMN_ITEM_LIST_DATE, item.getDate());
+        values.put(COLUMN_ITEM_LIST_DESCRIPTION, item.getDescription());
+        values.put(COLUMN_ITEM_LIST_CATEGORY, item.getCategory());
+        values.put(COLUMN_ITEM_LIST_IMAGE_DATA, item.getImageData());
+        values.put(COLUMN_ITEM_LIST_PRICE, item.getPrice());
+        values.put(COLUMN_ITEM_LIST_DISCOUNTS_JSON, item.getDiscountsJson());
+        values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
+        values.put(COLUMN_ITEM_LIST_PARENT_LIST_ID, item.getParentListId());
+        values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
+
+        long id = db.insert(TABLE_ITEM_LIST, null, values);
+        if (id == -1) {
+            Log.e(TAG, "Failed to insert item: " + item.getName());
+        } else {
+            Log.d(TAG, "Item added with ID: " + id + ", Name: " + item.getName());
+        }
+        db.close();
+        return id;
+    }
+
+    public int updateItemQuantity(int itemId, int newQuantity) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ITEM_LIST_COUNT, newQuantity);
+
+        Item existingItem = getItemByIdInternal(db, itemId);
+        if (existingItem != null) {
+            double originalPrice = existingItem.getPrice();
+            String discountsJson = existingItem.getDiscountsJson();
+
+            List<Double> discounts = new ArrayList<>();
+            if (discountsJson != null && !discountsJson.isEmpty()) {
+                Gson gson = new Gson();
+                Type type = new TypeToken<List<Double>>() {}.getType();
+                List<Double> loadedDiscounts = gson.fromJson(discountsJson, type);
+                if (loadedDiscounts != null) {
+                    discounts.addAll(loadedDiscounts);
                 }
-            } else {
-                Log.d(TAG, "deleteItem: Image file not found for item ID " + itemId + ": " + file.getAbsolutePath());
             }
-        } else if (context == null) {
-            Log.e(TAG, "deleteItem: Context is null, cannot delete image file for item ID: " + itemId);
+
+            double totalCombinedDiscountPercentage = 0.0;
+            for (Double discount : discounts) {
+                if (discount != null) {
+                    totalCombinedDiscountPercentage += discount;
+                }
+            }
+
+            if (totalCombinedDiscountPercentage > 100.0) {
+                totalCombinedDiscountPercentage = 100.0;
+            }
+
+            double totalBasePrice = originalPrice * newQuantity;
+            double finalPrice = totalBasePrice * (1 - (totalCombinedDiscountPercentage / 100));
+            if (finalPrice < 0.0) {
+                finalPrice = 0.0;
+            }
+
+            values.put(COLUMN_ITEM_LIST_FINAL_PRICE, finalPrice);
+            values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, totalCombinedDiscountPercentage);
+        } else {
+            Log.w(TAG, "Attempted to update quantity for non-existent item ID: " + itemId);
+            db.close();
+            return 0;
+        }
+
+        int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
+                new String[]{String.valueOf(itemId)});
+        db.close();
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Item ID: " + itemId + " quantity updated to " + newQuantity);
+        } else {
+            Log.e(TAG, "Failed to update item ID: " + itemId + " quantity.");
+        }
+        return rowsAffected;
+    }
+
+    public Item getItemById(int itemId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Item item = getItemByIdInternal(db, itemId);
+        db.close();
+        return item;
+    }
+
+    private Item getItemByIdInternal(SQLiteDatabase db, int itemId) {
+        Cursor cursor = null;
+        Item item = null;
+        try {
+            cursor = db.query(TABLE_ITEM_LIST, null,
+                    COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
+                    new String[]{String.valueOf(itemId)},
+                    null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_INTERNAL_ID));
+                @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_NAME));
+                @SuppressLint("Range") int count = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_COUNT));
+                @SuppressLint("Range") boolean isAddButton = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_IS_ADD_BUTTON)) == 1;
+                @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DATE));
+                @SuppressLint("Range") String description = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DESCRIPTION));
+                @SuppressLint("Range") String category = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_CATEGORY));
+                @SuppressLint("Range") String imageData = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_IMAGE_DATA));
+                @SuppressLint("Range") double price = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_PRICE));
+                @SuppressLint("Range") String discountsJson = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DISCOUNTS_JSON));
+                @SuppressLint("Range") double finalPrice = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_FINAL_PRICE));
+                @SuppressLint("Range") int parentListId = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_PARENT_LIST_ID));
+                @SuppressLint("Range") double totalDiscountPercentage = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE));
+
+                item = new Item(id, name, count, isAddButton, date);
+                item.setDescription(description);
+                item.setCategory(category);
+                item.setImageData(imageData);
+                item.setPrice(price);
+                item.setDiscountsJson(discountsJson);
+                item.setFinalPrice(finalPrice);
+                item.setParentListId(parentListId);
+                item.setTotalDiscountPercentage(totalDiscountPercentage);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return item;
+    }
+
+
+    public List<Item> getItemsByParentListId(int parentListId) {
+        List<Item> items = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(TABLE_ITEM_LIST, null,
+                    COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?",
+                    new String[]{String.valueOf(parentListId)},
+                    null, null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_INTERNAL_ID));
+                    @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_NAME));
+                    @SuppressLint("Range") int count = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_COUNT));
+                    @SuppressLint("Range") boolean isAddButton = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_IS_ADD_BUTTON)) == 1;
+                    @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DATE));
+                    @SuppressLint("Range") String description = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DESCRIPTION));
+                    @SuppressLint("Range") String category = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_CATEGORY));
+                    @SuppressLint("Range") String imageData = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_IMAGE_DATA));
+                    @SuppressLint("Range") double price = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_PRICE));
+                    @SuppressLint("Range") String discountsJson = cursor.getString(cursor.getColumnIndex(COLUMN_ITEM_LIST_DISCOUNTS_JSON));
+                    @SuppressLint("Range") double finalPrice = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_FINAL_PRICE));
+                    @SuppressLint("Range") int pListId = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_PARENT_LIST_ID));
+                    @SuppressLint("Range") double totalDiscountPercentage = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE));
+
+                    Item item = new Item(id, name, count, isAddButton, date);
+                    item.setDescription(description);
+                    item.setCategory(category);
+                    item.setImageData(imageData);
+                    item.setPrice(price);
+                    item.setDiscountsJson(discountsJson);
+                    item.setFinalPrice(finalPrice);
+                    item.setParentListId(pListId);
+                    item.setTotalDiscountPercentage(totalDiscountPercentage);
+                    items.add(item);
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        return items;
+    }
+
+    public int deleteItem(int itemId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Item itemToDelete = getItemByIdInternal(db, itemId);
+        if (itemToDelete != null && itemToDelete.getImageData() != null) {
+            File imageFile = new File(context.getFilesDir(), itemToDelete.getImageData());
+            if (imageFile.exists()) {
+                if (imageFile.delete()) {
+                    Log.d(TAG, "Deleted image file: " + imageFile.getAbsolutePath());
+                } else {
+                    Log.e(TAG, "Failed to delete image file: " + imageFile.getAbsolutePath());
+                }
+            }
+        }
+
+        int rowsAffected = db.delete(TABLE_ITEM_LIST, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
+                new String[]{String.valueOf(itemId)});
+        db.close(); // Close here
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Item deleted with ID: " + itemId);
+        } else {
+            Log.e(TAG, "Failed to delete item with ID: " + itemId);
+        }
+        return rowsAffected;
+    }
+
+    public int updateItem(Item item) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ITEM_LIST_NAME, item.getName());
+        values.put(COLUMN_ITEM_LIST_COUNT, item.getCount());
+        values.put(COLUMN_ITEM_LIST_IS_ADD_BUTTON, item.isAddButton() ? 1 : 0);
+        values.put(COLUMN_ITEM_LIST_DATE, item.getDate());
+        values.put(COLUMN_ITEM_LIST_DESCRIPTION, item.getDescription());
+        values.put(COLUMN_ITEM_LIST_CATEGORY, item.getCategory());
+        values.put(COLUMN_ITEM_LIST_IMAGE_DATA, item.getImageData());
+        values.put(COLUMN_ITEM_LIST_PRICE, item.getPrice());
+        values.put(COLUMN_ITEM_LIST_DISCOUNTS_JSON, item.getDiscountsJson());
+        values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
+        values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
+
+        int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
+                new String[]{String.valueOf(item.getId())});
+        db.close();
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Item updated with ID: " + item.getId());
+        } else {
+            Log.e(TAG, "Failed to update item with ID: " + item.getId());
+        }
+        return rowsAffected;
+    }
+
+    public long addTodoItem(Item todoItem) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TODO_NAME, todoItem.getName());
+        values.put(COLUMN_TODO_IS_CHECKED, todoItem.isAddButton() ? 1 : 0);
+        values.put(COLUMN_TODO_PARENT_LIST_ID, todoItem.getParentListId());
+
+        long id = db.insert(TABLE_TODO_LIST, null, values);
+        if (id == -1) {
+            Log.e(TAG, "Failed to insert todo item: " + todoItem.getName());
+        } else {
+            Log.d(TAG, "Todo item added with ID: " + id + ", Name: " + todoItem.getName());
+        }
+        db.close();
+        return id;
+    }
+
+    public List<Item> getTodoItemsByParentListId(int parentListId) {
+        List<Item> todoItems = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(TABLE_TODO_LIST, null,
+                    COLUMN_TODO_PARENT_LIST_ID + " = ?",
+                    new String[]{String.valueOf(parentListId)},
+                    null, null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_TODO_ID));
+                    @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_TODO_NAME));
+                    @SuppressLint("Range") boolean isChecked = cursor.getInt(cursor.getColumnIndex(COLUMN_TODO_IS_CHECKED)) == 1;
+                    @SuppressLint("Range") int pListId = cursor.getInt(cursor.getColumnIndex(COLUMN_TODO_PARENT_LIST_ID));
+
+                    Item todoItem = new Item(id, name, 0, isChecked, null);
+                    todoItem.setParentListId(pListId);
+                    todoItems.add(todoItem);
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        return todoItems;
+    }
+
+    public int updateTodoItem(Item todoItem) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TODO_NAME, todoItem.getName());
+        values.put(COLUMN_TODO_IS_CHECKED, todoItem.isAddButton() ? 1 : 0);
+
+        int rowsAffected = db.update(TABLE_TODO_LIST, values, COLUMN_TODO_ID + " = ?",
+                new String[]{String.valueOf(todoItem.getId())});
+        db.close();
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Todo item updated with ID: " + todoItem.getId());
+        } else {
+            Log.e(TAG, "Failed to update todo item with ID: " + todoItem.getId());
+        }
+        return rowsAffected;
+    }
+
+    public int deleteTodoItem(int todoItemId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int rowsAffected = db.delete(TABLE_TODO_LIST, COLUMN_TODO_ID + " = ?",
+                new String[]{String.valueOf(todoItemId)});
+        db.close();
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Todo item deleted with ID: " + todoItemId);
+        } else {
+            Log.e(TAG, "Failed to delete todo item with ID: " + todoItemId);
+        }
+        return rowsAffected;
+    }
+
+    public void updateMarketName(int marketId, String newName) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_MARKET_NAME, newName);
+
+        int rowsAffected = db.update(TABLE_MARKETS, values, COLUMN_MARKET_ID + " = ?",
+                new String[]{String.valueOf(marketId)});
+        db.close();
+        if (rowsAffected > 0) {
+            Log.d(TAG, "Market name updated for ID: " + marketId + " to " + newName);
+        } else {
+            Log.e(TAG, "Failed to update market name for ID: " + marketId);
         }
     }
 
-    public void deleteTodoItem(int todoId) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        int rowsAffected = db.delete(TABLE_TODO_LIST, COLUMN_TODO_ID + " = ?", new String[]{String.valueOf(todoId)});
+    public Item getMarketById(int marketId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Item market = getMarketByIdInternal(db, marketId);
         db.close();
-        Log.d(TAG, "deleteTodoItem: Todo item ID " + todoId + " deleted from DB. Rows affected: " + rowsAffected);
+        return market;
     }
 
-    private Item createItemFromCursor(Cursor cursor) {
-        int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_INTERNAL_ID));
-        String itemListId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_ITEM_ID));
-        String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_NAME));
-        int count = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_COUNT));
-        boolean isAddButton = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_IS_ADD_BUTTON)) == 1;
-        String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_DATE));
-        String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_DESCRIPTION));
-        String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_CATEGORY));
-        String imageData = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_IMAGE_DATA));
-        double price = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_PRICE));
-        String discountsJson = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_DISCOUNTS_JSON));
-        double finalPrice = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_FINAL_PRICE));
-        int retrievedParentListId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_PARENT_LIST_ID));
-        double totalDiscountPercentage = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE));
+    private Item getMarketByIdInternal(SQLiteDatabase db, int marketId) {
+        Cursor cursor = null;
+        Item market = null;
+        try {
+            cursor = db.query(TABLE_MARKETS, null,
+                    COLUMN_MARKET_ID + " = ?",
+                    new String[]{String.valueOf(marketId)},
+                    null, null, null);
 
-        Item item = new Item(id, name, count, isAddButton, date);
-        item.setDescription(description);
-        item.setCategory(category);
-        item.setImageData(imageData);
-        item.setPrice(price);
-        item.setDiscountsJson(discountsJson);
-        item.setFinalPrice(finalPrice);
-        item.setItemListId(itemListId);
-        item.setParentListId(retrievedParentListId);
-        item.setTotalDiscountPercentage(totalDiscountPercentage);
-        return item;
+            if (cursor != null && cursor.moveToFirst()) {
+                @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ID));
+                @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_NAME));
+                @SuppressLint("Range") int count = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_COUNT));
+                @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_DATE));
+
+                market = new Item(id, name, count, false, date);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return market;
     }
 }

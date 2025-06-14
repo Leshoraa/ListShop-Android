@@ -6,7 +6,8 @@
 
     <!-- App Color Scheme -->
     <color name="colorPrimary">#CFEDDB</color>
-    <color name="colorSecPrimary">#ADCFBB</color>
+    <color name="colorSecPrimary">#B5D4C1</color>
+    <color name="colorTextPrimary">#A4C4B0</color>
     <color name="colorPrimaryVariant">#D4F4E1</color>
     <color name="colorSecondary">#F0F0F0</color>
     <color name="colorBackground">#FFFFFF</color>
