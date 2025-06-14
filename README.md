@@ -12,6 +12,11 @@
   - 📦 A dynamic product list with individual **quantity counters**.
   - 📝 A built-in **shopping checklist** that helps you keep track of what you need to buy — check off items as you go!
 
+- 🧾 **Market-to-Cart Flow**  
+  Upon launching the app, you're prompted to create a list of **markets or stores** you plan to visit.  
+  Each market acts as a separate entry point.  
+  When selected, it opens a dedicated **shopping cart screen** where you can manage the items to be purchased from that specific market.
+
 - ✍️ **Full Data Control (CRUD)**  
   Effortlessly manage your data with:
   - ➕ Add new markets, products, and to-do items.
