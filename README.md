@@ -43,7 +43,11 @@
 
 ## 📥 Demo App
 
-> A public APK is not yet available. Stay tuned for the upcoming beta release!
+You can try the latest beta version of the app by downloading the APK file below:
+
+➡️ **[ListShop APK (v0.9-beta)](https://github.com/Leshoraa/ListShop-Android/releases/download/v0.9-beta/ShopList.apk)**
+
+> ⚠️ *This is a beta release and may contain bugs. Feel free to report issues or feedback!*
 
 ---
 
