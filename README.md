@@ -9,20 +9,25 @@
 
 - 🛒 **Smart Market List with RecyclerView**  
   Organize your shopping experience by creating a list of **markets/stores**, each containing:
-  - 📦 A list of purchased products.
-  - 📝 A to-do checklist for items you plan to buy.
+  - 📦 A dynamic product list with individual **quantity counters**.
+  - ✅ A flexible **to-do list** of items to buy, each supporting custom **discount input** (e.g., percentage or price-off).
+  - 🛍️ Real-time tracking of purchased vs. pending items.
 
-- ✍️ **Full CRUD Functionality**  
-  Easily **Create, Read, Update, and Delete** markets, products, and to-do items.
+- ✍️ **Full Data Control (CRUD)**  
+  Effortlessly manage your data with:
+  - ➕ Add new markets, products, and to-do items.
+  - 📝 Edit and update existing entries.
+  - 🗑️ Delete unwanted items or entire lists.
+  - 📖 View and review your complete shopping list anytime.
 
-- 📶 **Completely Offline**  
-  No internet connection is required. All data is stored locally on your device.
+- 📶 **Offline-First Architecture**  
+  No internet required — all your shopping data is stored securely and locally on your device.
 
 - 💡 **Smooth Animations**  
-  Enjoy fluid and responsive UI transitions that enhance the overall user experience.
+  Experience responsive UI transitions that make every interaction feel natural and intuitive.
 
 - 🎨 **Modern Minimalist Design**  
-  Simple, intuitive layout for a clutter-free and user-friendly experience.
+  A clean, pastel-themed interface with thoughtful typography and padding ensures maximum usability with a relaxing look and feel.
 
 ---
 
