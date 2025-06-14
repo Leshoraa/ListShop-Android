@@ -11,7 +11,7 @@
   Organize your shopping experience by creating a list of **markets/stores**, each containing:
   - 📦 A dynamic product list with individual **quantity counters**.
   - ✅ A flexible **to-do list** of items to buy, each supporting custom **discount input** (e.g., percentage or price-off).
-  - 🛍️ Real-time tracking of purchased vs. pending items.
+  - 📝 A built-in **shopping checklist** that helps you keep track of what you need to buy — check off items as you go!
 
 - ✍️ **Full Data Control (CRUD)**  
   Effortlessly manage your data with:
