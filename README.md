@@ -19,7 +19,7 @@
 
 - ✍️ **Full Data Control (CRUD)**  
   Effortlessly manage your data with:
-  - ➕ Add new markets, products, and to-do items.
+  - ➕ Add new markets, products, and to-buy items.
   - 📝 Edit and update existing entries.
   - 🗑️ Delete unwanted items or entire lists.
   - 📖 View and review your complete shopping list anytime.
