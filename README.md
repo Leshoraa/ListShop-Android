@@ -37,7 +37,28 @@
 
 ## 📱 Screenshots
 
-> *Screenshots coming soon. Please check back later for visual previews!*
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/b121786f-8696-41a2-8b42-f1a4b595c71e" width="200px"/><br>
+      <strong style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Home</strong>
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/fc6143cd-c124-46dd-bc18-8dd64e218f98" width="200px"/><br>
+      <strong style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">List Activity</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/3703275f-cc92-458f-a9fb-cecee22fcdf2" width="200px"/><br>
+      <strong style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Update</strong>
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/b0351e22-29f7-40f3-8194-596e7ca0591c" width="200px"/><br>
+      <strong style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Add Item</strong>
+    </td>
+  </tr>
+</table>
 
 ---
 
