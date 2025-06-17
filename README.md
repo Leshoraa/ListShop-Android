@@ -1,6 +1,6 @@
-# ShopList Android
+# ListShop Android
 
-**ShopList** is a sleek and modern offline Android application designed to help users manage their shopping routines more efficiently. The app integrates smart AI capabilities to assist with product identification and description generation, all while maintaining a clean and minimalist user interface.
+**ListShop** is a sleek and modern offline Android application designed to help users manage their shopping routines more efficiently. The app integrates smart AI capabilities to assist with product identification and description generation, all while maintaining a clean and minimalist user interface.
 
 ## ✨ Features
 
@@ -66,7 +66,7 @@
 
 You can try the latest beta version of the app by downloading the APK file below:
 
-➡️ **[ShopList APK (v0.9-beta)](https://github.com/Leshoraa/ShopList-Android/releases/download/v0.9-beta/ShopList.apk)**
+➡️ **[ListShop APK (v0.9-beta)](https://github.com/Leshoraa/ListShop-Android/releases/download/v0.9-beta/ListShop.apk)**
 
 > ⚠️ *This is a beta release and may contain bugs. Feel free to report issues or feedback!*
 
@@ -87,7 +87,7 @@ You can try the latest beta version of the app by downloading the APK file below
 ### 1. Clone the Repository
 
 ```bash
-https://github.com/Leshoraa/ShopList-Android.git
+https://github.com/Leshoraa/ListShop-Android.git
 ```
 
 ### 2. Open in Android Studio
@@ -115,4 +115,4 @@ Feel free to submit **pull requests** or open **issues** for bugs, suggestions, 
 
 ---
 
-Thank you for checking out **ShopList Android**! Your feedback helps make it better.
+Thank you for checking out **ListShop Android**! Your feedback helps make it better.
