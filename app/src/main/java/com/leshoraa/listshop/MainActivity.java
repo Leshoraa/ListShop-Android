@@ -12,17 +12,21 @@ import android.view.WindowManager;
 import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.leshoraa.listshop.adapter.GridSpacingItemDecoration;
 import com.leshoraa.listshop.adapter.ItemAdapter;
 import com.leshoraa.listshop.model.DatabaseHelper;
 import com.leshoraa.listshop.model.Item;
 import com.leshoraa.listshop.databinding.ActivityMainBinding;
+import com.leshoraa.listshop.model.DateHeader;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -39,9 +43,10 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ItemAdapter adapter;
     private DatabaseHelper dbHelper;
+    private ItemTouchHelper itemTouchHelper;
 
     public static final SimpleDateFormat DB_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-    public static final SimpleDateFormat UI_DATE_FORMAT = new SimpleDateFormat("dd MMMM yyyy", Locale.getDefault());
+    public static final SimpleDateFormat UI_DATE_FORMAT = new SimpleDateFormat("dd MMMM", Locale.getDefault());
     public static final SimpleDateFormat UI_DATE_FORMAT_DISPLAY = new SimpleDateFormat("dd/MM", Locale.getDefault());
 
     public static final String EXTRA_ITEM_ID = "extra_item_id";
@@ -94,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         binding.rv.setHasFixedSize(true);
         binding.rv.addItemDecoration(new GridSpacingItemDecoration(numberOfColumns, 16));
 
-        adapter = new ItemAdapter(new ArrayList<>(), null, null, this);
+        adapter = new ItemAdapter(new ArrayList<>(), null, null, this, itemTouchHelper);
         binding.rv.setAdapter(adapter);
 
         adapter.addItemClickListener = () -> {
@@ -112,15 +117,12 @@ public class MainActivity extends AppCompatActivity {
             dbHelper.deleteMarket(marketId);
             Log.d(TAG, "deleteItemClickListener (for Market): Database delete attempt finished. Loading items...");
             loadItems();
-            Log.d(TAG, "deleteItemClickListener (for Market): Items reloaded. Setting focused position to -1.");
-            adapter.setFocusedPosition(-1);
         };
 
         adapter.setOnDeleteListItemClickListener(itemId -> {
             Log.d(TAG, "onDeleteListItemClick (for Item): Deleting item from DB with ID: " + itemId);
             dbHelper.deleteItem(itemId);
         });
-
 
         adapter.setOnItemClickListener(itemId -> {
             Intent intent = new Intent(MainActivity.this, ListActivity.class);
@@ -137,6 +139,77 @@ public class MainActivity extends AppCompatActivity {
                 return 1;
             }
         });
+
+        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(
+                // Izinkan drag ke semua arah (atas, bawah, kiri, kanan)
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT,
+                0 // Tidak ada swipe untuk saat ini
+        ) {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int dragFlags = 0;
+                if (viewHolder.getItemViewType() == ItemAdapter.VIEW_TYPE_ITEM) {
+                    // Hanya item non-AddButton yang bisa di-drag
+                    Item item = (Item) adapter.getCombinedList().get(viewHolder.getAdapterPosition());
+                    if (!item.isAddButton()) {
+                        dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+                    }
+                }
+                return makeMovementFlags(dragFlags, 0);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+
+                // Pastikan target juga adalah VIEW_TYPE_ITEM dan bukan AddButton atau Header
+                if (viewHolder.getItemViewType() != ItemAdapter.VIEW_TYPE_ITEM ||
+                        target.getItemViewType() != ItemAdapter.VIEW_TYPE_ITEM) {
+                    return false;
+                }
+
+                // Jangan izinkan drag ke atau dari AddButton
+                if (((Item) adapter.getCombinedList().get(fromPosition)).isAddButton() ||
+                        ((Item) adapter.getCombinedList().get(toPosition)).isAddButton()) {
+                    return false;
+                }
+
+                adapter.onItemMove(fromPosition, toPosition);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // Tidak melakukan apa-apa untuk swipe saat ini
+            }
+
+            @Override
+            public void onSelectedChanged(@NonNull RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    if (viewHolder instanceof ItemAdapter.ItemViewHolder) {
+                        ((ItemAdapter.ItemViewHolder) viewHolder).startJiggleAnimation();
+                    }
+                }
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+
+                if (viewHolder instanceof ItemAdapter.ItemViewHolder) {
+                    ((ItemAdapter.ItemViewHolder) viewHolder).stopJiggleAnimation();
+                }
+
+                // Panggil saveItemOrderToDatabase setelah drag selesai dan dilepas
+                adapter.saveItemOrderToDatabase();
+            }
+        };
+
+        itemTouchHelper = new ItemTouchHelper(simpleCallback);
+        itemTouchHelper.attachToRecyclerView(binding.rv);
+        adapter.setItemTouchHelper(itemTouchHelper);
 
         loadItems();
         updateDateRangeDisplay();

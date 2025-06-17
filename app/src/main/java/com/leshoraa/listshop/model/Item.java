@@ -14,6 +14,7 @@ public class Item {
     private double finalPrice;
     private String itemListId;
     private int parentListId;
+    private int order;
     private double totalDiscountPercentage;
 
     public Item(int id, String name, int count, boolean isAddButton, String date) {
@@ -29,6 +30,15 @@ public class Item {
         this.count = count;
         this.isAddButton = isAddButton;
         this.date = date;
+    }
+
+    public Item(int id, String name, int count, boolean isAddButton, String date, int order) {
+        this.id = id;
+        this.name = name;
+        this.count = count;
+        this.isAddButton = isAddButton;
+        this.date = date;
+        this.order = order;
     }
 
     public int getId() {
@@ -69,6 +79,14 @@ public class Item {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
+    }
+
+    public int getOrder() {
+        return order;
     }
 
     public String getDescription() {

@@ -1,16 +1,16 @@
 package com.leshoraa.listshop.adapter;
 
-import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.util.Log;
+import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.snackbar.Snackbar;
 import com.leshoraa.listshop.MainActivity;
@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Comparator; // Import Comparator here
 
 public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -43,12 +44,12 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public OnAddItemClickListener addItemClickListener;
     public OnDeleteItemClickListener deleteItemClickListener;
     private OnItemClickListener onItemClickListener;
-    private int focusedPosition = -1;
 
     private DatabaseHelper dbHelper;
     private Object recentlyDeletedObject;
     private int recentlyDeletedPosition;
     private RecyclerView recyclerView;
+    private ItemTouchHelper itemTouchHelper;
 
     public interface OnAddItemClickListener {
         void onAddItemClick();
@@ -62,7 +63,6 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onItemClick(int itemId);
     }
 
-
     public interface OnDeleteListItemClickListener {
         void onDeleteListItemClick(int itemId);
     }
@@ -73,13 +73,13 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.deleteListItemClickListener = listener;
     }
 
-
     public ItemAdapter(List<Item> initialItemList, OnAddItemClickListener addListener,
-                       OnDeleteItemClickListener deleteListener, Context context) {
+                       OnDeleteItemClickListener deleteListener, Context context, ItemTouchHelper itemTouchHelper) {
         this.addItemClickListener = addListener;
         this.deleteItemClickListener = deleteListener;
         this.combinedList = new ArrayList<>();
         this.dbHelper = new DatabaseHelper(context);
+        this.itemTouchHelper = itemTouchHelper;
         setItems(initialItemList);
     }
 
@@ -87,47 +87,56 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.onItemClickListener = listener;
     }
 
-    public void setItems(List<Item> rawItemList) {
-        Collections.sort(rawItemList, (item1, item2) -> {
-            int dateCompare = item2.getDate().compareTo(item1.getDate());
-            if (dateCompare == 0) {
-                return Integer.compare(item2.getId(), item1.getId());
-            }
-            return dateCompare;
-        });
+    public List<Object> getCombinedList() {
+        return combinedList;
+    }
 
-        LinkedHashMap<String, List<Item>> groupedItems = new LinkedHashMap<>();
+    public void setItems(List<Item> rawItemList) {
+        Item addButtonInList = null;
+        List<Item> actualItemsFromDb = new ArrayList<>();
         for (Item item : rawItemList) {
-            groupedItems.computeIfAbsent(item.getDate(), k -> new ArrayList<>()).add(item);
+            if (item.isAddButton()) {
+                addButtonInList = item;
+            } else {
+                actualItemsFromDb.add(item);
+            }
         }
+
+        // Urutkan item berdasarkan properti 'order' (urutan global)
+        // Ini akan mengurutkan *pasar* berdasarkan urutan yang tersimpan.
+        Collections.sort(actualItemsFromDb, Comparator.comparingInt(Item::getOrder));
 
         List<Object> tempCombinedList = new ArrayList<>();
         String currentDbDate = MainActivity.DB_DATE_FORMAT.format(new Date());
+        String currentUiDate = MainActivity.UI_DATE_FORMAT.format(new Date());
 
-        List<String> sortedDbDates = new ArrayList<>(groupedItems.keySet());
-        Collections.sort(sortedDbDates, (d1, d2) -> d2.compareTo(d1));
+        // Tambahkan Header untuk tanggal hari ini (Jika ini berlaku untuk pasar, jika tidak, hapus)
+        // Perhatikan bahwa header tanggal mungkin tidak relevan jika Anda hanya menampilkan daftar pasar.
+        // Jika Anda ingin mengelompokkan pasar berdasarkan tanggal pembuatannya, maka biarkan ini.
+        tempCombinedList.add(new DateHeader(currentUiDate));
 
-        Item addButton = new Item("Add Item", 0, true, currentDbDate);
-
-        tempCombinedList.add(new DateHeader(MainActivity.UI_DATE_FORMAT.format(new Date())));
-        tempCombinedList.add(addButton);
-
-        if (groupedItems.containsKey(currentDbDate)) {
-            tempCombinedList.addAll(groupedItems.get(currentDbDate));
-            sortedDbDates.remove(currentDbDate);
+        // Tambahkan tombol "Add Item"
+        if (addButtonInList == null) {
+            addButtonInList = new Item("Add Item", 0, true, currentDbDate);
         }
+        tempCombinedList.add(addButtonInList);
 
-        for (String dbDate : sortedDbDates) {
-            if (!groupedItems.get(dbDate).isEmpty()) {
-                try {
-                    String uiDate = MainActivity.UI_DATE_FORMAT.format(MainActivity.DB_DATE_FORMAT.parse(dbDate));
-                    tempCombinedList.add(new DateHeader(uiDate));
-                    tempCombinedList.addAll(groupedItems.get(dbDate));
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    tempCombinedList.add(new DateHeader("Invalid Date: " + dbDate));
-                    tempCombinedList.addAll(groupedItems.get(dbDate));
+        String lastProcessedDate = currentDbDate;
+
+        for (Item item : actualItemsFromDb) {
+            try {
+                String itemDate = item.getDate();
+                if (!itemDate.equals(lastProcessedDate)) {
+                    if (!itemDate.equals(currentDbDate)) {
+                        String uiDate = MainActivity.UI_DATE_FORMAT.format(MainActivity.DB_DATE_FORMAT.parse(itemDate));
+                        tempCombinedList.add(new DateHeader(uiDate));
+                    }
+                    lastProcessedDate = itemDate;
                 }
+                tempCombinedList.add(item);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                tempCombinedList.add(item);
             }
         }
 
@@ -157,17 +166,44 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return name2.compareTo(name1);
     }
 
-    public void setFocusedPosition(int position) {
-        int oldFocusedPosition = this.focusedPosition;
-        this.focusedPosition = position;
+    public void setItemTouchHelper(ItemTouchHelper itemTouchHelper) {
+        this.itemTouchHelper = itemTouchHelper;
+    }
 
-        if (oldFocusedPosition != RecyclerView.NO_POSITION) {
-            notifyItemChanged(oldFocusedPosition);
+    public void onItemMove(int fromPosition, int toPosition) {
+        if (fromPosition < combinedList.size() && toPosition < combinedList.size()) {
+            Object movedObject = combinedList.get(fromPosition);
+            Object targetObject = combinedList.get(toPosition);
+
+            // Only allow moves for actual items (not headers or the add button)
+            if (!(movedObject instanceof Item && !((Item) movedObject).isAddButton()) ||
+                    !(targetObject instanceof Item && !((Item) targetObject).isAddButton())) {
+                Log.d(TAG, "onItemMove: Invalid move target (header or add button)");
+                return;
+            }
+
+            Collections.swap(combinedList, fromPosition, toPosition); // Use Collections.swap for direct swap
+            notifyItemMoved(fromPosition, toPosition);
+
+            // Save the new order immediately after a visual move
+            saveItemOrderToDatabase();
         }
-        if (position != RecyclerView.NO_POSITION) {
-            notifyItemChanged(position);
-        } else {
-            notifyDataSetChanged();
+    }
+
+    public void saveItemOrderToDatabase() {
+        Log.d(TAG, "Saving new market order to database...");
+        int currentOrder = 0; // Initialize order counter
+        for (int i = 0; i < combinedList.size(); i++) {
+            Object obj = combinedList.get(i);
+            if (obj instanceof Item && !((Item) obj).isAddButton()) {
+                Item market = (Item) obj;
+                // Assign the new order based on the current position in the combinedList
+                market.setOrder(currentOrder);
+                // Now, call updateMarketOrder with id and the new order
+                dbHelper.updateMarketOrder(market.getId(), market.getOrder());
+                Log.d(TAG, "Updating market ID: " + market.getId() + " to order: " + market.getOrder());
+                currentOrder++; // Increment for the next item
+            }
         }
     }
 
@@ -214,6 +250,9 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (recyclerView != null) {
                 recyclerView.scrollToPosition(recentlyDeletedPosition);
             }
+            // After undo, the order in the database might be stale for this item.
+            // It's good practice to re-save the order of all visible items.
+            saveItemOrderToDatabase();
             recentlyDeletedObject = null;
             recentlyDeletedPosition = -1;
             Log.d(TAG, "undoDelete: Item restored visually.");
@@ -265,7 +304,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return new DateHeaderViewHolder(headerBinding);
         } else {
             MainItem1Binding binding = MainItem1Binding.inflate(inflater, parent, false);
-            return new ItemViewHolder(binding, this);
+            return new ItemViewHolder(binding, this, itemTouchHelper);
         }
     }
 
@@ -276,7 +315,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((DateHeaderViewHolder) holder).bind(header);
         } else {
             Item item = (Item) combinedList.get(position);
-            ((ItemViewHolder) holder).bind(item, position, position == focusedPosition);
+            ((ItemViewHolder) holder).bind(item, position);
         }
     }
 
@@ -285,42 +324,17 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return combinedList.size();
     }
 
-    class ItemViewHolder extends RecyclerView.ViewHolder {
+    public class ItemViewHolder extends RecyclerView.ViewHolder {
         private final MainItem1Binding binding;
-        private AnimatorSet pulseAnimator;
         private ObjectAnimator jiggleAnimator;
-        private boolean isLongPressing = false;
         private final ItemAdapter adapter;
+        private final ItemTouchHelper itemTouchHelper;
 
-        public ItemViewHolder(MainItem1Binding binding, ItemAdapter adapter) {
+        public ItemViewHolder(MainItem1Binding binding, ItemAdapter adapter, ItemTouchHelper itemTouchHelper) {
             super(binding.getRoot());
             this.binding = binding;
             this.adapter = adapter;
-
-            binding.getRoot().setOnTouchListener((v, event) -> {
-                int adapterPos = getAdapterPosition();
-                if (adapterPos == RecyclerView.NO_POSITION) return false;
-                Object currentItem = combinedList.get(adapterPos);
-                if (!(currentItem instanceof Item)) return false;
-                Item item = (Item) currentItem;
-
-                if (!item.isAddButton()) {
-                    switch (event.getAction()) {
-                        case MotionEvent.ACTION_DOWN:
-                            if (!isLongPressing && focusedPosition == -1) {
-                                startPulseAnimation();
-                            }
-                            break;
-                        case MotionEvent.ACTION_UP:
-                        case MotionEvent.ACTION_CANCEL:
-                            if (!isLongPressing) {
-                                stopPulseAnimation();
-                            }
-                            break;
-                    }
-                }
-                return false;
-            });
+            this.itemTouchHelper = itemTouchHelper;
 
             binding.getRoot().setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -330,8 +344,6 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         Item item = (Item) currentItem;
                         if (item.isAddButton()) {
                             addItemClickListener.onAddItemClick();
-                        } else if (focusedPosition != -1) {
-                            setFocusedPosition(-1);
                         } else {
                             if (onItemClickListener != null) {
                                 onItemClickListener.onItemClick(item.getId());
@@ -345,21 +357,36 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     Object currentItem = combinedList.get(position);
-                    if (currentItem instanceof Item) {
-                        Item item = (Item) currentItem;
-                        if (!item.isAddButton()) {
-                            isLongPressing = true;
-                            setFocusedPosition(position);
-                            showPopupMenu(v, item.getId(), position);
-                            return true;
-                        }
+                    if (currentItem instanceof Item && !((Item) currentItem).isAddButton()) {
+                        showItemPopupMenu(v, position, (Item) currentItem);
+                        return true;
                     }
                 }
                 return false;
             });
         }
 
-        public void bind(Item item, int position, boolean isFocused) {
+        private void showItemPopupMenu(View view, int position, Item item) {
+            PopupMenu popup = new PopupMenu(view.getContext(), view);
+            popup.getMenu().add(0, 0, 0, "Delete Item");
+
+            popup.setOnMenuItemClickListener(menuItem -> {
+                if (menuItem.getTitle().equals("Delete Item")) {
+                    adapter.removeItem(position);
+                    return true;
+                }
+                return false;
+            });
+
+            popup.setOnDismissListener(menu -> {
+                stopJiggleAnimation();
+            });
+
+            startJiggleAnimation();
+            popup.show();
+        }
+
+        public void bind(Item item, int position) {
             binding.getRoot().setVisibility(View.VISIBLE);
 
             if (item.isAddButton()) {
@@ -369,42 +396,9 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.tvMainItemsCount.setText(String.valueOf(item.getCount()));
                 binding.tvTitleItems.setText(item.getName());
             }
-
-            if (!isFocused && !item.isAddButton()) {
-                stopJiggleAnimation();
-            }
-            if (focusedPosition == -1 && pulseAnimator != null) {
-                stopPulseAnimation();
-            }
-
-            if (isFocused) {
-                startJiggleAnimation();
-            } else {
-                stopJiggleAnimation();
-            }
         }
 
-        private void startPulseAnimation() {
-            if (pulseAnimator != null) {
-                pulseAnimator.cancel();
-            }
-            ObjectAnimator scaleX = ObjectAnimator.ofFloat(binding.getRoot(), "scaleX", 1f, 1.1f, 0.9f, 1f);
-            ObjectAnimator scaleY = ObjectAnimator.ofFloat(binding.getRoot(), "scaleY", 1f, 1.1f, 0.9f, 1f);
-            pulseAnimator = new AnimatorSet();
-            pulseAnimator.playTogether(scaleX, scaleY);
-            pulseAnimator.setDuration(300);
-            pulseAnimator.start();
-        }
-
-        private void stopPulseAnimation() {
-            if (pulseAnimator != null) {
-                pulseAnimator.cancel();
-                binding.getRoot().setScaleX(1f);
-                binding.getRoot().setScaleY(1f);
-            }
-        }
-
-        private void startJiggleAnimation() {
+        public void startJiggleAnimation() {
             if (jiggleAnimator != null) {
                 jiggleAnimator.cancel();
             }
@@ -415,30 +409,11 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             jiggleAnimator.start();
         }
 
-        private void stopJiggleAnimation() {
+        public void stopJiggleAnimation() {
             if (jiggleAnimator != null) {
                 jiggleAnimator.cancel();
                 binding.getRoot().setRotation(0f);
             }
-        }
-
-        private void showPopupMenu(View view, int itemIdToDelete, int itemPosition) {
-            PopupMenu popup = new PopupMenu(view.getContext(), view);
-            popup.getMenu().add("Delete");
-            popup.setOnMenuItemClickListener(menuItem -> {
-                if (menuItem.getTitle().equals("Delete")) {
-                    Log.d(TAG, "PopupMenu: Delete clicked for item ID: " + itemIdToDelete + " at position " + itemPosition);
-                    adapter.removeItem(itemPosition);
-                    setFocusedPosition(-1);
-                }
-                return true;
-            });
-            popup.setOnDismissListener(menu -> {
-                isLongPressing = false;
-                setFocusedPosition(-1);
-                Log.d(TAG, "PopupMenu dismissed.");
-            });
-            popup.show();
         }
     }
 
