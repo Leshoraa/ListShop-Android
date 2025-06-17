@@ -371,10 +371,6 @@ public class PreviewItemActivity extends AppCompatActivity {
     private void saveItemChanges() {
         if (!discounts.isEmpty()) {
             Double lastDiscountValue = discounts.get(discounts.size() - 1);
-            if (lastDiscountValue == null || lastDiscountValue == 0.0) {
-                Toast.makeText(this, "Please fill or remove the last empty discount field before updating.", Toast.LENGTH_SHORT).show();
-                return;
-            }
         }
 
         Item item = dbHelper.getItemById(selectedItemId);
@@ -418,7 +414,11 @@ public class PreviewItemActivity extends AppCompatActivity {
                 }
             }
             Gson gson = new Gson();
-            item.setDiscountsJson(gson.toJson(discountsToSave));
+            if (discountsToSave.isEmpty()) {
+                item.setDiscountsJson(null);
+            } else {
+                item.setDiscountsJson(gson.toJson(discountsToSave));
+            }
 
             double totalBasePrice = item.getPrice() * item.getCount();
             double totalCombinedDiscountPercentage = 0.0;
