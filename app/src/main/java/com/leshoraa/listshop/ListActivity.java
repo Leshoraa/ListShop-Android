@@ -2,7 +2,9 @@ package com.leshoraa.listshop;
 
 import android.animation.ObjectAnimator;
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -19,11 +21,14 @@ import android.widget.Toast;
 import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.transition.AutoTransition;
@@ -195,6 +200,106 @@ public class ListActivity extends AppCompatActivity {
                 loadItems();
             });
         });
+
+        ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            private Drawable deleteIcon;
+            private ObjectAnimator currentJiggleAnimator;
+            private View currentJiggleView;
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    if (viewHolder instanceof ItemListAdapter.ItemViewHolder) {
+                        ((ItemListAdapter.ItemViewHolder) viewHolder).setDeleteItemVisibility(View.GONE);
+                    }
+                    itemListAdapter.removeItem(position);
+                }
+                stopJiggleAnimation(viewHolder.itemView);
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+
+                View itemView = viewHolder.itemView;
+                if (viewHolder instanceof ItemListAdapter.ItemViewHolder) {
+                    if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                        if (isCurrentlyActive) {
+                            if (currentJiggleView != itemView || currentJiggleAnimator == null || !currentJiggleAnimator.isRunning()) {
+                                stopJiggleAnimation(currentJiggleView);
+                                startJiggleAnimation(itemView);
+                                currentJiggleView = itemView;
+                            }
+                        } else if (dX == 0) {
+                            stopJiggleAnimation(itemView);
+                            currentJiggleView = null;
+                        }
+                    } else {
+                        stopJiggleAnimation(itemView);
+                        currentJiggleView = null;
+                    }
+                }
+
+                if (deleteIcon == null) {
+                    deleteIcon = ContextCompat.getDrawable(ListActivity.this, R.drawable.outline_delete_24);
+                }
+
+                int iconLeft, iconRight;
+                int iconTop = itemView.getTop() + (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
+                int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
+                int iconWidth = deleteIcon.getIntrinsicWidth();
+                int iconMargin = (itemView.getHeight() - iconWidth) / 2;
+
+                if (dX < 0) {
+                    float swipeProgress = Math.min(1f, Math.abs(dX) / (float)itemView.getWidth());
+                    iconRight = (int) (recyclerView.getWidth() + iconWidth - (iconWidth + iconMargin) * swipeProgress);
+                    iconLeft = iconRight - iconWidth;
+                } else if (dX > 0) {
+                    float swipeProgress = Math.min(1f, Math.abs(dX) / (float)itemView.getWidth());
+                    iconLeft = (int) (-iconWidth + (iconWidth + iconMargin) * swipeProgress);
+                    iconRight = iconLeft + iconWidth;
+                } else {
+                    deleteIcon.setAlpha(0);
+                    iconLeft = 0;
+                    iconRight = 0;
+                }
+
+                if (deleteIcon != null && dX != 0) {
+                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                    deleteIcon.draw(c);
+                    deleteIcon.setAlpha(255);
+                }
+            }
+
+            private void startJiggleAnimation(View view) {
+                if (currentJiggleAnimator != null) {
+                    currentJiggleAnimator.cancel();
+                }
+                currentJiggleAnimator = ObjectAnimator.ofFloat(view, "rotation", -5f, 5f);
+                currentJiggleAnimator.setDuration(150);
+                currentJiggleAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+                currentJiggleAnimator.setRepeatMode(ObjectAnimator.REVERSE);
+                currentJiggleAnimator.start();
+            }
+
+            private void stopJiggleAnimation(View view) {
+                if (currentJiggleAnimator != null) {
+                    currentJiggleAnimator.cancel();
+                    if (view != null) {
+                        view.setRotation(0f);
+                    }
+                }
+                currentJiggleAnimator = null;
+            }
+        };
+
+        new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(binding.rvList);
     }
 
     private void setupTodoRecyclerView() {
@@ -278,9 +383,7 @@ public class ListActivity extends AppCompatActivity {
     private void updateShopListCount() {
         int count = todoList.size();
         binding.tvShoplistCount.setText(String.valueOf(count));
-        //binding.flShoplistCount.setVisibility(count > 0 ? View.VISIBLE : View.GONE); // Hide if count is 0
     }
-
 
     private void toggleTodoVisibility() {
         TransitionManager.beginDelayedTransition(binding.getRoot(), new TransitionSet()

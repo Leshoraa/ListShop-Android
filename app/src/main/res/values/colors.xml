@@ -12,7 +12,7 @@
     <color name="colorSecondary">#F0F0F0</color>
     <color name="colorBackground">#FFFFFF</color>
     <color name="colorSurface">#FBFFE4</color>
-    <color name="warning">#9EC4000E</color>
+    <color name="warning">#C9303B</color>
 
     <!-- Text/Icon on Top of Backgrounds -->
     <color name="colorOnPrimary">#FFFFFFFF</color>

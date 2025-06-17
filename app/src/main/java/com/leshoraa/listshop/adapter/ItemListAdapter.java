@@ -11,6 +11,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import android.animation.ObjectAnimator;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.leshoraa.listshop.R;
@@ -106,7 +109,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
             try {
                 currentQuantity = Integer.parseInt(holder.binding.edtQuantity.getText().toString());
             } catch (NumberFormatException e) {
-                // Biarkan default 0 atau sesuaikan jika perlu
             }
             int newQuantity = Math.max(1, currentQuantity - 1);
             holder.binding.edtQuantity.setText(String.valueOf(newQuantity));
@@ -117,7 +119,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
             try {
                 currentQuantity = Integer.parseInt(holder.binding.edtQuantity.getText().toString());
             } catch (NumberFormatException e) {
-                // Biarkan default 0 atau sesuaikan jika perlu
             }
             int newQuantity = currentQuantity + 1;
             holder.binding.edtQuantity.setText(String.valueOf(newQuantity));
@@ -134,6 +135,9 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         } else {
             holder.binding.imgItemPreview.setImageResource(R.drawable.ic_launcher_background);
         }
+
+        holder.setDeleteItemVisibility(View.VISIBLE);
+        holder.binding.deleteItem.setTranslationX(0f);
     }
 
     @Override
@@ -190,7 +194,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
     }
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
-        final ListItem1Binding binding;
+        public final ListItem1Binding binding;
         TextWatcher quantityTextWatcher;
 
         public ItemViewHolder(@NonNull ListItem1Binding binding,
@@ -215,6 +219,30 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                     }
                 }
             });
+        }
+
+        public void setDeleteItemVisibility(int visibility) {
+            if (binding.deleteItem.getVisibility() == visibility) {
+                return;
+            }
+
+            if (visibility == View.GONE) {
+                ObjectAnimator animator = ObjectAnimator.ofFloat(binding.deleteItem, "translationX", 0f, binding.deleteItem.getWidth());
+                animator.setDuration(200);
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        binding.deleteItem.setVisibility(View.GONE);
+                        binding.deleteItem.setTranslationX(0f);
+                    }
+                });
+                animator.start();
+            } else { // View.VISIBLE
+                binding.deleteItem.setVisibility(View.VISIBLE);
+                ObjectAnimator animator = ObjectAnimator.ofFloat(binding.deleteItem, "translationX", binding.deleteItem.getWidth(), 0f);
+                animator.setDuration(200);
+                animator.start();
+            }
         }
     }
 
