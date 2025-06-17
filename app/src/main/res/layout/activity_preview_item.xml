@@ -4,20 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:background="@color/colorBackground"
     android:layout_height="match_parent"
+    android:background="@color/colorBackground"
     tools:context=".PreviewItemActivity">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cvtop"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
         app:cardBackgroundColor="#AFFBEB"
         app:cardCornerRadius="12dp"
-        android:layout_marginTop="12dp"
-        app:layout_constraintDimensionRatio="4:3"
         app:cardElevation="0dp"
-        android:layout_marginHorizontal="16dp"
+        app:layout_constraintDimensionRatio="4:3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -28,27 +28,26 @@
             android:layout_height="match_parent"
             android:background="#AAAAAA"
             android:scaleType="centerCrop"
-            android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:visibility="invisible" />
     </androidx.cardview.widget.CardView>
 
 
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="6dp"
         android:scrollbarSize="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_saveItem"
+        app:layout_constraintBottom_toTopOf="@+id/back"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cvtop">
+        app:layout_constraintTop_toBottomOf="@+id/cvtop"
+        app:layout_constraintVertical_bias="0.0">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/cl_top"
@@ -69,19 +68,19 @@
                     app:cardCornerRadius="100dp"
                     app:cardElevation="0dp"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" >
+                    app:layout_constraintTop_toTopOf="parent">
 
                     <TextView
                         android:id="@+id/textView3"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginVertical="4dp"
                         android:layout_marginHorizontal="16dp"
+                        android:layout_marginVertical="4dp"
                         android:fontFamily="@font/ttchocolatesmedium"
                         android:gravity="center"
                         android:text="Title item"
                         android:textColor="@color/black"
-                        android:textSize="16sp"/>
+                        android:textSize="16sp" />
 
                 </androidx.cardview.widget.CardView>
 
@@ -90,10 +89,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_edt_add"
                     android:fontFamily="@font/ttchocolatesmedium"
                     android:paddingHorizontal="18dp"
                     android:privateImeOptions="noExtractUi"
-                    android:background="@drawable/bg_edt_add"
                     android:textSize="16sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -117,13 +116,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:fontFamily="@font/ttchocolatesmedium"
                     android:background="@drawable/bg_edt_add"
+                    android:fontFamily="@font/ttchocolatesmedium"
                     android:maxLines="6"
-                    android:privateImeOptions="noExtractUi"
                     android:minHeight="48dp"
                     android:paddingHorizontal="18dp"
                     android:paddingVertical="12dp"
+                    android:privateImeOptions="noExtractUi"
                     android:textSize="16sp"
                     app:layout_constraintEnd_toEndOf="@+id/edt_title"
                     app:layout_constraintStart_toStartOf="@+id/edt_title"
@@ -147,13 +146,13 @@
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_edt_add"
                     android:fontFamily="@font/ttchocolatesmedium"
                     android:maxLines="1"
-                    android:background="@drawable/bg_edt_add"
-                    android:privateImeOptions="noExtractUi"
                     android:paddingHorizontal="18dp"
-                    android:textSize="16sp"
+                    android:privateImeOptions="noExtractUi"
                     android:textColor="#639378"
+                    android:textSize="16sp"
                     app:layout_constraintEnd_toEndOf="@+id/edt_title"
                     app:layout_constraintStart_toStartOf="@+id/edt_title"
                     app:layout_constraintTop_toBottomOf="@+id/textView5" />
@@ -176,10 +175,10 @@
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_edt_add"
                     android:fontFamily="@font/ttchocolatesmedium"
                     android:inputType="number"
                     android:paddingHorizontal="18dp"
-                    android:background="@drawable/bg_edt_add"
                     android:textSize="16sp"
                     app:layout_constraintEnd_toEndOf="@+id/edt_title"
                     app:layout_constraintStart_toStartOf="@+id/edt_title"
@@ -205,9 +204,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                app:layout_constraintHeight_min="46dp"
                 android:layout_marginBottom="16dp"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintHeight_min="46dp"
                 app:layout_constraintStart_toEndOf="@+id/tv_discountTitle"
                 app:layout_constraintTop_toBottomOf="@+id/cl_top">
 
@@ -226,14 +224,15 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/back"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="46dp"
+        android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
         app:cardBackgroundColor="@color/colorSecondary"
         app:cardCornerRadius="10dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/cvtop">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:layout_width="48dp"
@@ -249,8 +248,8 @@
         android:layout_height="0dp"
         android:layout_marginStart="12dp"
         android:background="@drawable/bg_edt_quantity"
-        app:layout_constraintStart_toEndOf="@id/back"
         app:layout_constraintBottom_toBottomOf="@+id/back"
+        app:layout_constraintStart_toEndOf="@id/back"
         app:layout_constraintTop_toTopOf="@+id/back">
 
         <TextView
@@ -263,9 +262,9 @@
             android:textAlignment="center"
             android:textColor="@color/colorSecPrimary"
             android:textSize="24sp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <EditText
             android:id="@+id/edt_quantity"
@@ -273,10 +272,10 @@
             android:layout_height="wrap_content"
             android:background="#00FFFFFF"
             android:fontFamily="@font/ttchocolatesdemibold"
+            android:inputType="number"
             android:minHeight="48dp"
             android:paddingHorizontal="18dp"
             android:paddingVertical="12dp"
-            android:inputType="number"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/tv_addquantity"
@@ -293,9 +292,9 @@
             android:textAlignment="center"
             android:textColor="@color/colorSecPrimary"
             android:textSize="24sp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -304,13 +303,14 @@
         android:layout_width="0dp"
         android:layout_height="46dp"
         android:layout_marginStart="12dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
         app:cardBackgroundColor="@color/colorPrimary"
         app:cardCornerRadius="10dp"
         app:cardElevation="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/cvtop"
-        app:layout_constraintStart_toEndOf="@+id/clquantity">
+        app:layout_constraintBottom_toBottomOf="@+id/back"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/clquantity"
+        app:layout_constraintTop_toTopOf="@+id/back">
 
         <TextView
             android:id="@+id/tv_saveItem"

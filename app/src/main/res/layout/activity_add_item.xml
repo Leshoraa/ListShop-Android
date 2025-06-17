@@ -257,9 +257,10 @@
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginStart="12dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_edt_quantity"
         app:layout_constraintStart_toEndOf="@id/back"
-        app:layout_constraintBottom_toBottomOf="@+id/back"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="@+id/back">
 
         <TextView

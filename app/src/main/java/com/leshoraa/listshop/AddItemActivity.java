@@ -24,7 +24,6 @@ import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Toast;
-import android.util.Log;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -89,7 +88,7 @@ public class AddItemActivity extends AppCompatActivity {
         enforceMaxDiscount();
     };
 
-    private final String GEMINI_API_KEY = "YOUR_GEMINI_API";
+    private final String GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
 
     private final OkHttpClient client = new OkHttpClient();
     private final List<String> GEMINI_MODELS = Arrays.asList(
@@ -377,7 +376,6 @@ public class AddItemActivity extends AppCompatActivity {
         binding.edtTitle.setText("Analyzing image...");
         binding.edtDesc.setText("Please wait, identifying object...");
         binding.edtCategory.setText("Identifying category...");
-        Log.d("GeminiRequest", "Attempting to analyze image with model: " + currentModel);
 
 
         Bitmap resizedImage = resizeBitmap(image, 1200, 1200);
@@ -393,9 +391,6 @@ public class AddItemActivity extends AppCompatActivity {
         resizedImage.compress(Bitmap.CompressFormat.JPEG, 70, stream);
 
         String base64Image = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
-
-        Log.d("GeminiRequest", "Base64 Image length: " + base64Image.length());
-        Log.d("GeminiRequest", "Base64 Image start (first 100 chars): " + base64Image.substring(0, Math.min(base64Image.length(), 100)));
 
         JSONObject json = new JSONObject();
         try {
@@ -428,7 +423,6 @@ public class AddItemActivity extends AppCompatActivity {
         } catch (Exception e) {
             runOnUiThread(() -> {
                 Toast.makeText(this, "JSON creation error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e("GeminiRequest", "JSON creation error", e);
                 binding.edtTitle.setText("Error");
                 binding.edtDesc.setText("Failed to prepare request.");
                 binding.edtCategory.setText("Error");
@@ -437,8 +431,6 @@ public class AddItemActivity extends AppCompatActivity {
         }
 
         RequestBody body = RequestBody.create(json.toString(), MediaType.get("application/json"));
-
-        Log.d("GeminiRequest", "JSON Request Body: " + json.toString());
 
         Request request = new Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + ":generateContent?key=" + GEMINI_API_KEY)
@@ -450,7 +442,6 @@ public class AddItemActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 runOnUiThread(() -> {
                     Toast.makeText(AddItemActivity.this, "Failed to connect to Gemini API: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    Log.e("GeminiResponse", "Network failure", e);
                     binding.edtTitle.setText("Connection Error");
                     binding.edtDesc.setText("Failed to retrieve description. Check internet connection.");
                     binding.edtCategory.setText("Error");
@@ -461,11 +452,9 @@ public class AddItemActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try {
                     String resBody = response.body() != null ? response.body().string() : "Empty Response Body";
-                    Log.d("GeminiResponse", "Raw Response: " + resBody);
 
                     if (!response.isSuccessful()) {
                         if (response.code() == 503 || response.code() == 429) { // 503 Service Unavailable or 429 Too Many Requests
-                            Log.w("GeminiResponse", "Model " + currentModel + " returned error " + response.code() + ". Trying next model.");
                             currentModelIndex++;
                             // Retry with the next model after a short delay
                             runOnUiThread(() -> {
@@ -474,7 +463,6 @@ public class AddItemActivity extends AppCompatActivity {
                         } else {
                             runOnUiThread(() -> {
                                 Toast.makeText(AddItemActivity.this, "API response unsuccessful: " + response.code() + " - " + resBody, Toast.LENGTH_LONG).show();
-                                Log.e("GeminiResponse", "API Error " + response.code() + ": " + resBody);
                                 binding.edtTitle.setText("Error " + response.code());
                                 binding.edtDesc.setText("Failed to get description. Status: " + response.code() + ". Detail: " + (resBody.length() > 100 ? resBody.substring(0, 100) + "..." : resBody));
                                 binding.edtCategory.setText("Error");
@@ -558,7 +546,6 @@ public class AddItemActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     runOnUiThread(() -> {
                         Toast.makeText(AddItemActivity.this, "Response parsing error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        Log.e("GeminiResponse", "Parsing error", e);
                         binding.edtTitle.setText("Parsing Error");
                         binding.edtDesc.setText("An error occurred while processing the response.");
                         binding.edtCategory.setText("Error");
@@ -583,7 +570,6 @@ public class AddItemActivity extends AppCompatActivity {
         int newHeight = Math.round(originalHeight * ratio);
 
         if (newWidth <= 0 || newHeight <= 0) {
-            Log.e("resizeBitmap", "Calculated new dimensions are zero or negative. Original: " + originalWidth + "x" + originalHeight + ", Max: " + maxWidth + "x" + maxHeight);
             return image;
         }
 
@@ -595,8 +581,6 @@ public class AddItemActivity extends AppCompatActivity {
             String title = "";
             String description = "";
             String category = "";
-
-            Log.d("GeminiProcessed", "Raw text from Gemini: " + response);
 
             if (response.trim().equalsIgnoreCase("Not a shopping item detected.")) {
                 title = "Not a Shopping Item";
@@ -635,16 +619,12 @@ public class AddItemActivity extends AppCompatActivity {
             binding.edtTitle.setText(title);
             binding.edtDesc.setText(description);
             binding.edtCategory.setText(category);
-            Log.d("GeminiProcessed", "Final Title: " + title);
-            Log.d("GeminiProcessed", "Final Description:\n" + description);
-            Log.d("GeminiProcessed", "Final Category: " + category);
 
         } catch (Exception e) {
             binding.edtTitle.setText("Parse Error");
             binding.edtDesc.setText("An error occurred while processing AI response.");
             binding.edtCategory.setText("Error");
             Toast.makeText(this, "Error parsing Gemini response: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e("GeminiProcessed", "Error processing Gemini response", e);
         }
     }
 
@@ -654,7 +634,6 @@ public class AddItemActivity extends AppCompatActivity {
             takePictureLauncher.launch(takePictureIntent);
         } catch (Exception e) {
             Toast.makeText(this, "Cannot open camera app", Toast.LENGTH_SHORT).show();
-            Log.e("Camera", "Failed to launch camera intent", e);
         }
     }
 
@@ -717,7 +696,6 @@ public class AddItemActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Toast.makeText(this, "Camera error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            Log.e("Camera", "Error opening camera preview", e);
         }
     }
 
@@ -726,7 +704,6 @@ public class AddItemActivity extends AppCompatActivity {
             camera.stopPreview();
             camera.release();
             camera = null;
-            Log.d("Camera", "Camera released.");
         }
     }
 
@@ -898,7 +875,7 @@ public class AddItemActivity extends AppCompatActivity {
                     currentPrice -= (currentPrice * (discountPercentage / 100.0));
                 }
             } catch (JSONException e) {
-                Log.e("CalculatePrice", "Kesalahan saat mengurai JSON diskon: " + e.getMessage());
+
             }
         }
         return Math.max(0, currentPrice);
@@ -911,7 +888,6 @@ public class AddItemActivity extends AppCompatActivity {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
             return filename;
         } catch (Exception e) {
-            Log.e("SaveImage", "Error saving image: " + e.getMessage());
             return null;
         } finally {
             try {
@@ -919,7 +895,6 @@ public class AddItemActivity extends AppCompatActivity {
                     fos.close();
                 }
             } catch (IOException e) {
-                Log.e("SaveImage", "Error closing FileOutputStream: " + e.getMessage());
             }
         }
     }
