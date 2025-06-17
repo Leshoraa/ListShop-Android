@@ -191,7 +191,14 @@ public class ListActivity extends AppCompatActivity {
         });
 
         itemListAdapter.setOnItemQuantityChangeListener((itemId, newQuantity) -> {
-            loadItems();
+            for (int i = 0; i < itemsList.size(); i++) {
+                Item item = itemsList.get(i);
+                if (item.getId() == itemId) {
+                    item.setCount(newQuantity);
+                    break;
+                }
+            }
+            updateTotalPrice();
         });
     }
 
