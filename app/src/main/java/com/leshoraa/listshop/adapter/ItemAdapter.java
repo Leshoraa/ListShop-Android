@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Comparator; // Import Comparator here
+import java.util.Comparator;
 
 public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -102,20 +102,14 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
         }
 
-        // Urutkan item berdasarkan properti 'order' (urutan global)
-        // Ini akan mengurutkan *pasar* berdasarkan urutan yang tersimpan.
         Collections.sort(actualItemsFromDb, Comparator.comparingInt(Item::getOrder));
 
         List<Object> tempCombinedList = new ArrayList<>();
         String currentDbDate = MainActivity.DB_DATE_FORMAT.format(new Date());
         String currentUiDate = MainActivity.UI_DATE_FORMAT.format(new Date());
 
-        // Tambahkan Header untuk tanggal hari ini (Jika ini berlaku untuk pasar, jika tidak, hapus)
-        // Perhatikan bahwa header tanggal mungkin tidak relevan jika Anda hanya menampilkan daftar pasar.
-        // Jika Anda ingin mengelompokkan pasar berdasarkan tanggal pembuatannya, maka biarkan ini.
         tempCombinedList.add(new DateHeader(currentUiDate));
 
-        // Tambahkan tombol "Add Item"
         if (addButtonInList == null) {
             addButtonInList = new Item("Add Item", 0, true, currentDbDate);
         }

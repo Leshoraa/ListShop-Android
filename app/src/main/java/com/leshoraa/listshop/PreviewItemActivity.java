@@ -1,6 +1,9 @@
 package com.leshoraa.listshop;
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -31,7 +34,9 @@ import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,6 +46,7 @@ public class PreviewItemActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
     private int selectedItemId = -1;
     private List<Double> discounts;
+    private Item currentItem;
     private DiscountAdapter discountAdapter;
     private DecimalFormat decimalFormat;
     private String currentPriceString = "";
@@ -54,6 +60,17 @@ public class PreviewItemActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         dbHelper = new DatabaseHelper(this);
+
+        int itemId = getIntent().getIntExtra("item_id", -1);
+        if (itemId != -1) {
+            currentItem = dbHelper.getItemById(itemId);
+            if (currentItem != null) {
+            } else {
+                Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        } else {
+        }
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
@@ -158,6 +175,7 @@ public class PreviewItemActivity extends AppCompatActivity {
 
         binding.back.setOnClickListener(v -> onBackPressed());
         binding.btnSaveItem.setOnClickListener(v -> saveItemChanges());
+        binding.copy.setOnClickListener(v -> copyItemDetailsToClipboard()   );
 
         binding.tvReducequantity.setOnClickListener(v -> updateQuantity(-1));
         binding.tvAddquantity.setOnClickListener(v -> updateQuantity(1));
@@ -200,6 +218,61 @@ public class PreviewItemActivity extends AppCompatActivity {
         });
     }
 
+    private void copyItemDetailsToClipboard() {
+        String itemName = binding.edtTitle.getText().toString();
+        String description = binding.edtDesc.getText().toString();
+        String category = binding.edtCategory.getText().toString();
+        String priceString = binding.edtPrice.getText().toString();
+        String quantityStr = binding.edtQuantity.getText().toString();
+        String date = binding.dateItem.getText().toString();
+
+        double originalPrice = 0.0;
+        try {
+            Number parsedNumber = decimalFormat.parse(priceString);
+            if (parsedNumber != null) {
+                originalPrice = parsedNumber.doubleValue();
+            }
+        } catch (ParseException e) {
+            Toast.makeText(this, "Format price not valid.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int quantity = Integer.parseInt(quantityStr);
+
+        double totalDiscountPercentage = 0.0;
+        for (Double discount : discounts) {
+            if (discount != null) {
+                totalDiscountPercentage += discount;
+            }
+        }
+        if (totalDiscountPercentage > 100.0) {
+            totalDiscountPercentage = 100.0;
+        }
+
+        double finalPrice = (originalPrice * quantity) * (1 - (totalDiscountPercentage / 100));
+
+        String formattedPrice = priceString;
+        String formattedDiscount = new DecimalFormat("#.##").format(totalDiscountPercentage) + "%";
+        String formattedFinalPrice = decimalFormat.format(finalPrice);
+
+        StringBuilder detailsBuilder = new StringBuilder();
+        detailsBuilder.append("Item name: ").append(itemName).append("\n\n");
+        detailsBuilder.append("Description: ").append(description.isEmpty() ? "-" : description).append("\n\n");
+        detailsBuilder.append("Category: ").append(category.isEmpty() ? "-" : category).append("\n\n");
+        detailsBuilder.append("Price: ").append(formattedPrice)
+                .append(" (Disc: ").append(formattedDiscount).append(")")
+                .append(" = ").append(formattedFinalPrice).append("\n\n");
+        detailsBuilder.append("Quantity: ").append(quantityStr).append("\n\n");
+        detailsBuilder.append("Date: ").append(date);
+
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("Item Details", detailsBuilder.toString());
+        clipboard.setPrimaryClip(clip);
+
+        Toast.makeText(this, "Copying: " + itemName, Toast.LENGTH_SHORT).show();
+
+    }
+
     private int calculateDiscountColumns(int itemWidthDp) {
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         float screenWidthDp = displayMetrics.widthPixels / displayMetrics.density;
@@ -238,6 +311,7 @@ public class PreviewItemActivity extends AppCompatActivity {
             binding.edtDesc.setText(item.getDescription());
             binding.edtCategory.setText(item.getCategory());
             binding.edtQuantity.setText(String.valueOf(item.getCount()));
+            loadDate(item.getDate());
 
             discounts.clear();
             if (item.getDiscountsJson() != null && !item.getDiscountsJson().isEmpty()) {
@@ -368,6 +442,26 @@ public class PreviewItemActivity extends AppCompatActivity {
         }
     }
 
+    private void loadDate(String dateString) {
+        if (dateString == null || dateString.isEmpty()) {
+            binding.dateItem.setText("No Date");
+            return;
+        }
+
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        SimpleDateFormat outputFormat = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
+
+        try {
+            Date date = inputFormat.parse(dateString);
+            if (date != null) {
+                String formattedDate = outputFormat.format(date);
+                binding.dateItem.setText(formattedDate);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+            binding.dateItem.setText(dateString);
+        }
+    }
     private void saveItemChanges() {
         if (!discounts.isEmpty()) {
             Double lastDiscountValue = discounts.get(discounts.size() - 1);

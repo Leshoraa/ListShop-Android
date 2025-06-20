@@ -22,13 +22,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private Context context;
 
     private static final String DATABASE_NAME = "shopping_list.db";
-    private static final int DATABASE_VERSION = 1; // Increment if you already have this DB in devices
-
+    private static final int DATABASE_VERSION = 1;
     public static final String TABLE_MARKETS = "markets";
     public static final String COLUMN_MARKET_ID = "_id";
     public static final String COLUMN_MARKET_NAME = "name";
     public static final String COLUMN_MARKET_DATE = "date";
     public static final String COLUMN_MARKET_COUNT = "count";
+    public static final String COLUMN_MARKET_ORDER = "market_order";
 
     public static final String TABLE_ITEM_LIST = "item_list";
     public static final String COLUMN_ITEM_LIST_INTERNAL_ID = "_id";
@@ -45,14 +45,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ITEM_LIST_FINAL_PRICE = "final_price";
     public static final String COLUMN_ITEM_LIST_PARENT_LIST_ID = "parent_list_id";
     public static final String COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE = "total_discount_percentage";
-    public static final String COLUMN_ITEM_LIST_ORDER = "item_order"; // New column for order
+    public static final String COLUMN_ITEM_LIST_ORDER = "item_order";
 
     public static final String TABLE_TODO_LIST = "todo_list";
     public static final String COLUMN_TODO_ID = "_id";
     public static final String COLUMN_TODO_NAME = "name";
     public static final String COLUMN_TODO_IS_CHECKED = "is_checked";
-    public static final String COLUMN_MARKET_ORDER = "market_order";
     public static final String COLUMN_TODO_PARENT_LIST_ID = "parent_list_id";
+
+    public static final String TABLE_SETTINGS = "settings";
+    public static final String COLUMN_SETTING_KEY = "setting_key";
+    public static final String COLUMN_SETTING_VALUE = "setting_value";
+    public static final String SETTING_AI_SWITCH_STATE = "ai_switch_state";
+
 
     private static final String CREATE_TABLE_MARKETS = "CREATE TABLE " + TABLE_MARKETS + "("
             + COLUMN_MARKET_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -76,7 +81,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + COLUMN_ITEM_LIST_FINAL_PRICE + " REAL,"
             + COLUMN_ITEM_LIST_PARENT_LIST_ID + " INTEGER NOT NULL,"
             + COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE + " REAL,"
-            + COLUMN_ITEM_LIST_ORDER + " INTEGER DEFAULT 0," // Add this line
+            + COLUMN_ITEM_LIST_ORDER + " INTEGER DEFAULT 0,"
             + " FOREIGN KEY (" + COLUMN_ITEM_LIST_PARENT_LIST_ID + ") REFERENCES " + TABLE_MARKETS + "(" + COLUMN_MARKET_ID + ") ON DELETE CASCADE" + ")";
 
     private static final String CREATE_TABLE_TODO_LIST = "CREATE TABLE " + TABLE_TODO_LIST + "("
@@ -85,6 +90,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + COLUMN_TODO_IS_CHECKED + " INTEGER,"
             + COLUMN_TODO_PARENT_LIST_ID + " INTEGER NOT NULL,"
             + " FOREIGN KEY (" + COLUMN_TODO_PARENT_LIST_ID + ") REFERENCES " + TABLE_MARKETS + "(" + COLUMN_MARKET_ID + ") ON DELETE CASCADE" + ")";
+
+    private static final String CREATE_TABLE_SETTINGS = "CREATE TABLE " + TABLE_SETTINGS + "("
+            + COLUMN_SETTING_KEY + " TEXT PRIMARY KEY,"
+            + COLUMN_SETTING_VALUE + " TEXT" + ")";
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -96,14 +105,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_MARKETS);
         db.execSQL(CREATE_TABLE_ITEM_LIST);
         db.execSQL(CREATE_TABLE_TODO_LIST);
+        db.execSQL(CREATE_TABLE_SETTINGS);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // If you are upgrading your database schema, you must handle existing data migration.
-        // For simplicity, this example drops and recreates tables.
-        // In a production app, you'd use ALTER TABLE statements to preserve data.
         db.execSQL("PRAGMA foreign_keys = OFF;");
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SETTINGS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_TODO_LIST);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_ITEM_LIST);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MARKETS);
@@ -119,16 +127,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public void saveSetting(String key, String value) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_SETTING_KEY, key);
+        values.put(COLUMN_SETTING_VALUE, value);
+        db.replace(TABLE_SETTINGS, null, values);
+        db.close();
+        Log.d(TAG, "Setting saved: " + key + " = " + value);
+    }
+
+    public String getSetting(String key, String defaultValue) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
+        String value = defaultValue;
+        try {
+            cursor = db.query(TABLE_SETTINGS, new String[]{COLUMN_SETTING_VALUE},
+                    COLUMN_SETTING_KEY + " = ?", new String[]{key},
+                    null, null, null);
+            if (cursor.moveToFirst()) {
+                value = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SETTING_VALUE));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting setting: " + key, e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        Log.d(TAG, "Setting retrieved: " + key + " = " + value);
+        return value;
+    }
+
     public void addMarket(Item market) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_MARKET_NAME, market.getName());
         values.put(COLUMN_MARKET_COUNT, market.getCount());
         values.put(COLUMN_MARKET_DATE, market.getDate());
-        // Ambil order terakhir dan tambahkan 1, atau 0 jika tidak ada
         int lastOrder = getLastMarketOrder();
-        values.put(COLUMN_MARKET_ORDER, lastOrder + 1); // Set order
-        market.setOrder(lastOrder + 1); // Set order di objek Item juga
+        values.put(COLUMN_MARKET_ORDER, lastOrder + 1);
+        market.setOrder(lastOrder + 1);
 
         long id = db.insert(TABLE_MARKETS, null, values);
         if (id == -1) {
@@ -139,11 +179,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    // Metode baru untuk mendapatkan urutan terakhir dari market
     private int getLastMarketOrder() {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
-        int lastOrder = -1; // Default to -1 so first item becomes 0
+        int lastOrder = -1;
         try {
             cursor = db.rawQuery("SELECT MAX(" + COLUMN_MARKET_ORDER + ") FROM " + TABLE_MARKETS, null);
             if (cursor.moveToFirst()) {
@@ -204,7 +243,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<Item> getMarkets() {
         List<Item> marketList = new ArrayList<>();
-        // Perhatikan pengurutan berdasarkan COLUMN_MARKET_ORDER, bukan COLUMN_ITEM_LIST_ORDER
         String selectQuery = "SELECT * FROM " + TABLE_MARKETS + " ORDER BY " + COLUMN_MARKET_ORDER + " ASC";
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
@@ -214,12 +252,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ID));
                 @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_NAME));
                 @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_DATE));
-                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ORDER)); // Ambil order
+                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ORDER));
 
                 int listItemCount = getListItemCountForMarket(id);
 
                 Item marketItem = new Item(id, name, listItemCount, false, date);
-                marketItem.setOrder(order); // Set order di objek Item
+                marketItem.setOrder(order);
                 marketList.add(marketItem);
             } while (cursor.moveToNext());
         }
@@ -275,7 +313,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
         values.put(COLUMN_ITEM_LIST_PARENT_LIST_ID, item.getParentListId());
         values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
-        values.put(COLUMN_ITEM_LIST_ORDER, item.getOrder()); // Add this line
+        values.put(COLUMN_ITEM_LIST_ORDER, item.getOrder());
 
         long id = db.insert(TABLE_ITEM_LIST, null, values);
         if (id == -1) {
@@ -373,7 +411,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 @SuppressLint("Range") double finalPrice = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_FINAL_PRICE));
                 @SuppressLint("Range") int parentListId = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_PARENT_LIST_ID));
                 @SuppressLint("Range") double totalDiscountPercentage = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE));
-                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_ORDER)); // Retrieve order
+                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_ORDER));
 
                 item = new Item(id, name, count, isAddButton, date);
                 item.setDescription(description);
@@ -384,7 +422,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 item.setFinalPrice(finalPrice);
                 item.setParentListId(parentListId);
                 item.setTotalDiscountPercentage(totalDiscountPercentage);
-                item.setOrder(order); // Set order
+                item.setOrder(order);
             }
         } finally {
             if (cursor != null) {
@@ -403,7 +441,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor = db.query(TABLE_ITEM_LIST, null,
                     COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?",
                     new String[]{String.valueOf(parentListId)},
-                    null, null, COLUMN_ITEM_LIST_ORDER + " ASC", null); // Order by the new column
+                    null, null, COLUMN_ITEM_LIST_ORDER + " ASC", null);
 
             if (cursor != null && cursor.moveToFirst()) {
                 do {
@@ -420,7 +458,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     @SuppressLint("Range") double finalPrice = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_FINAL_PRICE));
                     @SuppressLint("Range") int pListId = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_PARENT_LIST_ID));
                     @SuppressLint("Range") double totalDiscountPercentage = cursor.getDouble(cursor.getColumnIndex(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE));
-                    @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_ORDER)); // Retrieve order
+                    @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_ORDER));
 
                     Item item = new Item(id, name, count, isAddButton, date);
                     item.setDescription(description);
@@ -431,7 +469,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     item.setFinalPrice(finalPrice);
                     item.setParentListId(pListId);
                     item.setTotalDiscountPercentage(totalDiscountPercentage);
-                    item.setOrder(order); // Set order
+                    item.setOrder(order);
                     items.add(item);
                 } while (cursor.moveToNext());
             }
@@ -460,7 +498,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         int rowsAffected = db.delete(TABLE_ITEM_LIST, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
                 new String[]{String.valueOf(itemId)});
-        db.close(); // Close here
+        db.close();
         if (rowsAffected > 0) {
             Log.d(TAG, "Item deleted with ID: " + itemId);
         } else {
@@ -483,7 +521,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ITEM_LIST_DISCOUNTS_JSON, item.getDiscountsJson());
         values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
         values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
-        values.put(COLUMN_ITEM_LIST_ORDER, item.getOrder()); // Update order
+        values.put(COLUMN_ITEM_LIST_ORDER, item.getOrder());
 
         int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
                 new String[]{String.valueOf(item.getId())});
@@ -496,7 +534,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rowsAffected;
     }
 
-    // New method to update item order
     public int updateItemOrder(int itemId, int newOrder) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -627,10 +664,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 @SuppressLint("Range") String name = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_NAME));
                 @SuppressLint("Range") int count = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_COUNT));
                 @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(COLUMN_MARKET_DATE));
-                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ORDER)); // Retrieve order
+                @SuppressLint("Range") int order = cursor.getInt(cursor.getColumnIndex(COLUMN_MARKET_ORDER));
 
                 market = new Item(id, name, count, false, date);
-                market.setOrder(order); // Set order
+                market.setOrder(order);
             }
         } finally {
             if (cursor != null) {

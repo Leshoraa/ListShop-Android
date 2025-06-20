@@ -23,14 +23,8 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.widget.PopupMenu;
 import android.widget.Toast;
-
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -56,8 +50,14 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -108,7 +108,7 @@ public class AddItemActivity extends AppCompatActivity {
             "gemma-3-27b-it",
             "gemma-3n-e4b-it"
     );
-    private int currentModelIndex = 0; // Index of the currently used model in GEMINI_MODELS
+    private int currentModelIndex = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,31 +135,24 @@ public class AddItemActivity extends AppCompatActivity {
 
         Window window = getWindow();
 
-        // Set status bar color to white
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.setStatusBarColor(Color.WHITE);
 
-        // Set navigation bar color to white
         window.setNavigationBarColor(Color.WHITE);
 
-        // Change status bar icons to dark for visibility on white background (Android M and above)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Deprecated in API 30+, but still relevant for older versions
             window.getDecorView().setSystemUiVisibility(
                     window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             );
         }
 
-        // For Android R (API 30) and above, use WindowInsetsController for status and navigation bar icons
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (window.getDecorView().getWindowInsetsController() != null) {
-                // Set status bar icons to dark
                 window.getDecorView().getWindowInsetsController().setSystemBarsAppearance(
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                 );
-                // Set navigation bar icons to dark
                 window.getDecorView().getWindowInsetsController().setSystemBarsAppearance(
                         WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
                         WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
@@ -169,6 +162,8 @@ public class AddItemActivity extends AppCompatActivity {
 
         setupDiscountRecyclerView();
         setupTakePictureLauncher();
+        setupDropdownMenu();
+        setupAiSwitch();
 
         SurfaceView surfaceView = binding.cameraPreview;
         surfaceHolder = surfaceView.getHolder();
@@ -297,6 +292,59 @@ public class AddItemActivity extends AppCompatActivity {
         binding.btnSaveItem.setOnClickListener(v -> addItemToDatabase());
     }
 
+    private void setupAiSwitch() {
+        String savedState = dbHelper.getSetting(DatabaseHelper.SETTING_AI_SWITCH_STATE, "0");
+        boolean isAiSwitchOn = "1".equals(savedState);
+        binding.switchAi.setChecked(isAiSwitchOn);
+
+        binding.switchAi.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            dbHelper.saveSetting(DatabaseHelper.SETTING_AI_SWITCH_STATE, isChecked ? "1" : "0");
+
+            if (isChecked && capturedImageBitmap != null) {
+                analyzeImageWithGemini(capturedImageBitmap);
+            }
+        });
+    }
+
+    private void setupDropdownMenu() {
+        binding.dropdownMenu.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(AddItemActivity.this, v);
+            popup.getMenu().add("Remove title");
+            popup.getMenu().add("Remove Description");
+            popup.getMenu().add("Remove Category");
+            popup.getMenu().add("Remove Price");
+            popup.getMenu().add("----------");
+            popup.getMenu().add("Delete All");
+
+            popup.setOnMenuItemClickListener(item -> {
+                switch (item.getTitle().toString()) {
+                    case "Remove title":
+                        binding.edtTitle.setText("");
+                        return true;
+                    case "Remove Description":
+                        binding.edtDesc.setText("");
+                        return true;
+                    case "Remove Category":
+                        binding.edtCategory.setText("");
+                        return true;
+                    case "Remove Price":
+                        binding.edtPrice.setText("");
+                        return true;
+                    case "Delete All":
+                        binding.edtTitle.setText("");
+                        binding.edtDesc.setText("");
+                        binding.edtCategory.setText("");
+                        binding.edtPrice.setText("");
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            popup.show();
+        });
+    }
+
     private void setupDiscountRecyclerView() {
         discountItems = new ArrayList<>();
         discountItems.add("");
@@ -353,9 +401,10 @@ public class AddItemActivity extends AppCompatActivity {
                     binding.imageViewCaptured.setVisibility(View.VISIBLE);
                     binding.cameraPreview.setVisibility(View.GONE);
                     binding.edtQuantity.setText("1");
-
-                    currentModelIndex = 0;
-                    analyzeImageWithGemini(capturedImageBitmap);
+                    if (binding.switchAi.isChecked()) {
+                        currentModelIndex = 0;
+                        analyzeImageWithGemini(capturedImageBitmap);
+                    }
                 }
             }
         });
@@ -454,11 +503,10 @@ public class AddItemActivity extends AppCompatActivity {
                     String resBody = response.body() != null ? response.body().string() : "Empty Response Body";
 
                     if (!response.isSuccessful()) {
-                        if (response.code() == 503 || response.code() == 429) { // 503 Service Unavailable or 429 Too Many Requests
+                        if (response.code() == 503 || response.code() == 429) {
                             currentModelIndex++;
-                            // Retry with the next model after a short delay
                             runOnUiThread(() -> {
-                                analyzeImageWithGemini(capturedImageBitmap); // Retry with the next model
+                                analyzeImageWithGemini(capturedImageBitmap);
                             });
                         } else {
                             runOnUiThread(() -> {
@@ -714,10 +762,18 @@ public class AddItemActivity extends AppCompatActivity {
         int rotation = displayRotation;
         int degrees = 0;
         switch (rotation) {
-            case Surface.ROTATION_0: degrees = 0; break;
-            case Surface.ROTATION_90: degrees = 90; break;
-            case Surface.ROTATION_180: degrees = 180; break;
-            case Surface.ROTATION_270: degrees = 270; break;
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
         }
 
         int result;
@@ -752,6 +808,7 @@ public class AddItemActivity extends AppCompatActivity {
 
         return optimalSize;
     }
+
     private String addDiscountData() {
         JSONArray discountsJsonArray = new JSONArray();
         double sumOfDiscounts = 0.0;
@@ -781,6 +838,7 @@ public class AddItemActivity extends AppCompatActivity {
 
         return discountsJsonArray.toString();
     }
+
     private void addItemToDatabase() {
         String name = binding.edtTitle.getText().toString();
         String description = binding.edtDesc.getText().toString();
@@ -880,6 +938,7 @@ public class AddItemActivity extends AppCompatActivity {
         }
         return Math.max(0, currentPrice);
     }
+
     private String saveImageToInternalStorage(Bitmap bitmap, String filenameId) {
         String filename = filenameId + ".jpg";
         FileOutputStream fos = null;
