@@ -81,7 +81,6 @@ public class ListActivity extends AppCompatActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.setStatusBarColor(Color.WHITE);
-
         window.setNavigationBarColor(Color.WHITE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -151,9 +150,7 @@ public class ListActivity extends AppCompatActivity {
         });
 
         binding.back.setOnClickListener(v -> onBackPressed());
-
         binding.todo.setOnClickListener(v -> toggleTodoVisibility());
-
         binding.tvAddListBtn.setOnClickListener(v -> addTodoItemToList());
 
         binding.edtTodo.setOnEditorActionListener((v, actionId, event) -> {
@@ -196,9 +193,7 @@ public class ListActivity extends AppCompatActivity {
         });
 
         itemListAdapter.setOnItemQuantityChangeListener((itemId, newQuantity) -> {
-            binding.rvList.post(() -> {
-                loadItems();
-            });
+            updateTotalPrice();
         });
 
         ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {

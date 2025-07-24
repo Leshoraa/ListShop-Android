@@ -16,6 +16,7 @@
 
     <!-- Text/Icon on Top of Backgrounds -->
     <color name="colorOnPrimary">#FFFFFFFF</color>
+    <color name="colorOnCard">#8AF1F1F1</color>
     <color name="colorOnBackground">#2D2D2D</color>
     <color name="colorOnSurface">#515050</color>
 </resources>

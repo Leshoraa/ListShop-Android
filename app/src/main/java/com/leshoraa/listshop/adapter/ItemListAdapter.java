@@ -34,7 +34,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
     private OnItemDeleteListener onItemDeleteListener;
     private OnItemClickListener onItemClickListener;
     private DecimalFormat decimalFormat;
-
     private DatabaseHelper dbHelper;
     private Item recentlyDeletedItem;
     private int recentlyDeletedItemPosition;
@@ -95,7 +94,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         holder.binding.tvListTitle.setText(item.getName());
         holder.binding.tvListCategory.setText(item.getCategory());
         holder.binding.tvListPrice.setText(decimalFormat.format(item.getFinalPrice()));
-
         holder.binding.edtQuantity.setText(String.valueOf(item.getCount()));
 
         if (holder.quantityTextWatcher != null) {
@@ -286,8 +284,10 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
             }
 
             if (item.getCount() != newQuantity) {
-                Log.d("ItemListAdapter", "Updating item ID: " + item.getId() + " quantity from " + item.getCount() + " to " + newQuantity);
                 item.setCount(newQuantity);
+
+                item.setFinalPrice(item.getPrice() * newQuantity);
+
                 dbHelper.updateItemQuantity(item.getId(), newQuantity);
 
                 if (listener != null) {

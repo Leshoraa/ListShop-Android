@@ -10,9 +10,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-
 import java.io.File;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -243,7 +241,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<Item> getMarkets() {
         List<Item> marketList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_MARKETS + " ORDER BY " + COLUMN_MARKET_ORDER + " ASC";
+        // ## PERUBAHAN DI SINI ##
+        String selectQuery = "SELECT * FROM " + TABLE_MARKETS + " ORDER BY " + COLUMN_MARKET_DATE + " DESC, " + COLUMN_MARKET_ORDER + " ASC";
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
 
@@ -267,18 +266,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return marketList;
     }
 
-    public int updateMarketOrder(int marketId, int newOrder) {
+    // ## METODE BARU DITAMBAHKAN DI SINI ##
+    public int updateMarketOrderAndDate(int marketId, int newOrder, String newDate) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_MARKET_ORDER, newOrder);
+        values.put(COLUMN_MARKET_DATE, newDate);
 
         int rowsAffected = db.update(TABLE_MARKETS, values, COLUMN_MARKET_ID + " = ?",
                 new String[]{String.valueOf(marketId)});
         db.close();
         if (rowsAffected > 0) {
-            Log.d(TAG, "Market ID: " + marketId + " order updated to " + newOrder);
+            Log.d(TAG, "Market ID: " + marketId + " order updated to " + newOrder + " and date to " + newDate);
         } else {
-            Log.e(TAG, "Failed to update market ID: " + marketId + " order.");
+            Log.e(TAG, "Failed to update market ID: " + marketId);
         }
         return rowsAffected;
     }

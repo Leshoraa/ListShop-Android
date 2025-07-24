@@ -88,7 +88,7 @@ public class AddItemActivity extends AppCompatActivity {
         enforceMaxDiscount();
     };
 
-    private final String GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
+    private final String GEMINI_API_KEY = "AIzaSyBh2atjZlS_3CBjzsrLNCTvXKitRbvDiLI";
 
     private final OkHttpClient client = new OkHttpClient();
     private final List<String> GEMINI_MODELS = Arrays.asList(
