@@ -93,7 +93,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
 
         holder.binding.tvListTitle.setText(item.getName());
         holder.binding.tvListCategory.setText(item.getCategory());
-        holder.binding.tvListPrice.setText(decimalFormat.format(item.getFinalPrice()));
+        holder.binding.tvListPrice.setText(decimalFormat.format(item.getPrice()));
         holder.binding.edtQuantity.setText(String.valueOf(item.getCount()));
 
         if (holder.quantityTextWatcher != null) {

@@ -25,7 +25,6 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.PopupMenu;
 import android.widget.Toast;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -37,16 +36,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.leshoraa.listshop.adapter.DiscountAdapter;
 import com.leshoraa.listshop.databinding.ActivityAddItemBinding;
 import com.leshoraa.listshop.model.DatabaseHelper;
 import com.leshoraa.listshop.model.Item;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -58,7 +54,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -92,21 +87,8 @@ public class AddItemActivity extends AppCompatActivity {
 
     private final OkHttpClient client = new OkHttpClient();
     private final List<String> GEMINI_MODELS = Arrays.asList(
-            "gemini-2.5-pro-preview-05-06",
-            "gemini-2.5-flash-preview-04-17",
-            "gemini-2.5-flash-preview-05-20",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-preview-image-generation",
-            "gemini-2.0-flash-lite",
-            "gemini-2.5-pro-preview-tts",
-            "veo-2.0-generate-001",
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-8b",
-            "gemma-3-1b-it",
-            "gemma-3-4b-it",
-            "gemma-3-12b-it",
-            "gemma-3-27b-it",
-            "gemma-3n-e4b-it"
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro-latest"
     );
     private int currentModelIndex = 0;
 
@@ -134,11 +116,9 @@ public class AddItemActivity extends AppCompatActivity {
         }
 
         Window window = getWindow();
-
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.setStatusBarColor(Color.WHITE);
-
         window.setNavigationBarColor(Color.WHITE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -217,12 +197,10 @@ public class AddItemActivity extends AppCompatActivity {
         binding.tvReducequantity.setOnClickListener(v -> {
             try {
                 int currentQuantity = Integer.parseInt(binding.edtQuantity.getText().toString());
-
                 if (currentQuantity > 0) {
                     currentQuantity--;
                     binding.edtQuantity.setText(String.valueOf(currentQuantity));
                 }
-
             } catch (NumberFormatException e) {
                 binding.edtQuantity.setText("0");
             }
@@ -233,7 +211,6 @@ public class AddItemActivity extends AppCompatActivity {
                 int currentQuantity = Integer.parseInt(binding.edtQuantity.getText().toString());
                 currentQuantity++;
                 binding.edtQuantity.setText(String.valueOf(currentQuantity));
-
             } catch (NumberFormatException e) {
                 binding.edtQuantity.setText("1");
             }
@@ -248,20 +225,15 @@ public class AddItemActivity extends AppCompatActivity {
             private String current = "";
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
             public void afterTextChanged(Editable s) {
                 if (!s.toString().equals(current)) {
                     binding.edtPrice.removeTextChangedListener(this);
-
                     String cleanString = s.toString().replaceAll("[.]", "");
                     if (cleanString.isEmpty()) {
                         current = "";
@@ -270,20 +242,16 @@ public class AddItemActivity extends AppCompatActivity {
                         binding.edtPrice.addTextChangedListener(this);
                         return;
                     }
-
                     long parsed;
                     try {
                         parsed = Long.parseLong(cleanString);
                     } catch (NumberFormatException e) {
                         parsed = 0;
                     }
-
                     String formatted = decimalFormat.format(parsed);
-
                     current = formatted;
                     binding.edtPrice.setText(formatted);
                     binding.edtPrice.setSelection(formatted.length());
-
                     binding.edtPrice.addTextChangedListener(this);
                 }
             }
@@ -296,10 +264,8 @@ public class AddItemActivity extends AppCompatActivity {
         String savedState = dbHelper.getSetting(DatabaseHelper.SETTING_AI_SWITCH_STATE, "0");
         boolean isAiSwitchOn = "1".equals(savedState);
         binding.switchAi.setChecked(isAiSwitchOn);
-
         binding.switchAi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             dbHelper.saveSetting(DatabaseHelper.SETTING_AI_SWITCH_STATE, isChecked ? "1" : "0");
-
             if (isChecked && capturedImageBitmap != null) {
                 analyzeImageWithGemini(capturedImageBitmap);
             }
@@ -315,7 +281,6 @@ public class AddItemActivity extends AppCompatActivity {
             popup.getMenu().add("Remove Price");
             popup.getMenu().add("----------");
             popup.getMenu().add("Delete All");
-
             popup.setOnMenuItemClickListener(item -> {
                 switch (item.getTitle().toString()) {
                     case "Remove title":
@@ -340,7 +305,6 @@ public class AddItemActivity extends AppCompatActivity {
                         return false;
                 }
             });
-
             popup.show();
         });
     }
@@ -349,12 +313,10 @@ public class AddItemActivity extends AppCompatActivity {
         discountItems = new ArrayList<>();
         discountItems.add("");
         discountAdapter = new DiscountAdapter(discountItems);
-
         numberOfDiscountColumns = calculateDiscountColumns(150);
         GridLayoutManager layoutManager = new GridLayoutManager(this, numberOfDiscountColumns);
         binding.rvEdtDiscount.setLayoutManager(layoutManager);
         binding.rvEdtDiscount.setAdapter(discountAdapter);
-
         discountAdapter.setOnEditTextChangeListener((position, text) -> {
             if (position >= 0 && position < discountItems.size()) {
                 discountItems.set(position, text);
@@ -362,7 +324,6 @@ public class AddItemActivity extends AppCompatActivity {
                 handler.postDelayed(enforceMaxDiscountRunnable, 500);
             }
         });
-
         discountAdapter.setOnItemDeleteListener(position -> {
             if (position != RecyclerView.NO_POSITION && position < discountItems.size()) {
                 discountItems.remove(position);
@@ -374,7 +335,6 @@ public class AddItemActivity extends AppCompatActivity {
                 binding.rvEdtDiscount.post(() -> enforceMaxDiscount());
             }
         });
-
         discountAdapter.setOnAddButtonClickListener(() -> {
             if (!discountItems.isEmpty()) {
                 String lastItemValue = discountItems.get(discountItems.size() - 1);
@@ -383,7 +343,6 @@ public class AddItemActivity extends AppCompatActivity {
                     return;
                 }
             }
-
             discountItems.add("");
             discountAdapter.notifyItemInserted(discountItems.size() - 1);
             binding.rvEdtDiscount.scrollToPosition(discountItems.size() - 1);
@@ -426,7 +385,6 @@ public class AddItemActivity extends AppCompatActivity {
         binding.edtDesc.setText("Please wait, identifying object...");
         binding.edtCategory.setText("Identifying category...");
 
-
         Bitmap resizedImage = resizeBitmap(image, 1200, 1200);
         if (resizedImage == null) {
             Toast.makeText(this, "Failed to process image.", Toast.LENGTH_LONG).show();
@@ -438,9 +396,7 @@ public class AddItemActivity extends AppCompatActivity {
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         resizedImage.compress(Bitmap.CompressFormat.JPEG, 70, stream);
-
         String base64Image = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
-
         JSONObject json = new JSONObject();
         try {
             json.put("model", currentModel);
@@ -452,7 +408,6 @@ public class AddItemActivity extends AppCompatActivity {
             inlineData.put("mime_type", "image/jpeg");
             inlineData.put("data", base64Image);
             part2.put("inlineData", inlineData);
-
             JSONObject content = new JSONObject();
             JSONArray parts = new JSONArray();
             parts.put(part1);
@@ -460,7 +415,6 @@ public class AddItemActivity extends AppCompatActivity {
             content.put("parts", parts);
             contents.put(content);
             json.put("contents", contents);
-
             json.put("generationConfig", new JSONObject().put("temperature", 0.4));
             JSONArray safetySettings = new JSONArray();
             JSONObject harmCategory = new JSONObject();
@@ -468,7 +422,6 @@ public class AddItemActivity extends AppCompatActivity {
             harmCategory.put("threshold", "BLOCK_NONE");
             safetySettings.put(harmCategory);
             json.put("safetySettings", safetySettings);
-
         } catch (Exception e) {
             runOnUiThread(() -> {
                 Toast.makeText(this, "JSON creation error: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -478,14 +431,11 @@ public class AddItemActivity extends AppCompatActivity {
             });
             return;
         }
-
         RequestBody body = RequestBody.create(json.toString(), MediaType.get("application/json"));
-
         Request request = new Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + ":generateContent?key=" + GEMINI_API_KEY)
                 .post(body)
                 .build();
-
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
@@ -501,9 +451,8 @@ public class AddItemActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try {
                     String resBody = response.body() != null ? response.body().string() : "Empty Response Body";
-
                     if (!response.isSuccessful()) {
-                        if (response.code() == 503 || response.code() == 429) {
+                        if (response.code() == 404 || response.code() == 503 || response.code() == 429) {
                             currentModelIndex++;
                             runOnUiThread(() -> {
                                 analyzeImageWithGemini(capturedImageBitmap);
@@ -518,7 +467,6 @@ public class AddItemActivity extends AppCompatActivity {
                         }
                         return;
                     }
-
                     JSONObject resJson = new JSONObject(resBody);
                     JSONArray candidates = resJson.optJSONArray("candidates");
                     if (candidates != null && candidates.length() > 0) {
@@ -605,22 +553,17 @@ public class AddItemActivity extends AppCompatActivity {
 
     private Bitmap resizeBitmap(Bitmap image, int maxWidth, int maxHeight) {
         if (image == null) return null;
-
         int originalWidth = image.getWidth();
         int originalHeight = image.getHeight();
-
         if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
             return image;
         }
-
         float ratio = Math.min((float) maxWidth / originalWidth, (float) maxHeight / originalHeight);
         int newWidth = Math.round(originalWidth * ratio);
         int newHeight = Math.round(originalHeight * ratio);
-
         if (newWidth <= 0 || newHeight <= 0) {
             return image;
         }
-
         return Bitmap.createScaledBitmap(image, newWidth, newHeight, true);
     }
 
@@ -629,7 +572,6 @@ public class AddItemActivity extends AppCompatActivity {
             String title = "";
             String description = "";
             String category = "";
-
             if (response.trim().equalsIgnoreCase("Not a shopping item detected.")) {
                 title = "Not a Shopping Item";
                 description = "The detected object is not recognized as a typical shopping item for your list. Please ensure you are photographing groceries, household goods, or similar items.";
@@ -638,24 +580,20 @@ public class AddItemActivity extends AppCompatActivity {
                 int titleStart = response.indexOf("Title:");
                 int descStart = response.indexOf("Description:");
                 int categoryStart = response.indexOf("Category:");
-
                 if (titleStart != -1) {
                     titleStart += "Title:".length();
                     int titleEnd = (descStart != -1) ? descStart : (categoryStart != -1) ? categoryStart : response.length();
                     title = response.substring(titleStart, titleEnd).replace("Description:", "").replace("Category:", "").trim();
                 }
-
                 if (descStart != -1) {
                     descStart += "Description:".length();
                     int descEnd = (categoryStart != -1) ? categoryStart : response.length();
                     description = response.substring(descStart, descEnd).replace("Category:", "").trim();
                 }
-
                 if (categoryStart != -1) {
                     categoryStart += "Category:".length();
                     category = response.substring(categoryStart).trim();
                 }
-
                 String[] descLines = description.split("\r?\n");
                 StringBuilder finalDescription = new StringBuilder();
                 for (String line : descLines) {
@@ -663,11 +601,9 @@ public class AddItemActivity extends AppCompatActivity {
                 }
                 description = finalDescription.toString().trim();
             }
-
             binding.edtTitle.setText(title);
             binding.edtDesc.setText(description);
             binding.edtCategory.setText(category);
-
         } catch (Exception e) {
             binding.edtTitle.setText("Parse Error");
             binding.edtDesc.setText("An error occurred while processing AI response.");
@@ -706,28 +642,20 @@ public class AddItemActivity extends AppCompatActivity {
             if (camera != null) {
                 releaseCamera();
             }
-
             camera = android.hardware.Camera.open();
             android.hardware.Camera.Parameters parameters = camera.getParameters();
-
             android.hardware.Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 4.0);
             if (optimalSize != null) {
                 parameters.setPreviewSize(optimalSize.width, optimalSize.height);
             }
-
             camera.setParameters(parameters);
-
             setCameraDisplayOrientation(android.hardware.Camera.CameraInfo.CAMERA_FACING_BACK, camera);
-
             camera.setPreviewDisplay(holder);
             camera.startPreview();
-
             float targetRatio = 4f / 3f;
             int parentWidth = binding.cameraPreview.getWidth();
             int parentHeight = binding.cameraPreview.getHeight();
-
             int newWidth, newHeight;
-
             if ((float) parentWidth / parentHeight > targetRatio) {
                 newHeight = parentHeight;
                 newWidth = (int) (parentHeight * targetRatio);
@@ -735,13 +663,11 @@ public class AddItemActivity extends AppCompatActivity {
                 newWidth = parentWidth;
                 newHeight = (int) (parentWidth / targetRatio);
             }
-
             ViewGroup.LayoutParams params = binding.cameraPreview.getLayoutParams();
             params.width = newWidth;
             params.height = newHeight;
             binding.cameraPreview.setLayoutParams(params);
             binding.cameraPreview.requestLayout();
-
         } catch (Exception e) {
             Toast.makeText(this, "Camera error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
@@ -758,7 +684,6 @@ public class AddItemActivity extends AppCompatActivity {
     private void setCameraDisplayOrientation(int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
         android.hardware.Camera.getCameraInfo(cameraId, info);
-
         int rotation = displayRotation;
         int degrees = 0;
         switch (rotation) {
@@ -775,7 +700,6 @@ public class AddItemActivity extends AppCompatActivity {
                 degrees = 270;
                 break;
         }
-
         int result;
         if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
             result = (info.orientation + degrees) % 360;
@@ -783,7 +707,6 @@ public class AddItemActivity extends AppCompatActivity {
         } else {
             result = (info.orientation - degrees + 360) % 360;
         }
-
         camera.setDisplayOrientation(result);
     }
 
@@ -791,7 +714,6 @@ public class AddItemActivity extends AppCompatActivity {
         final double ASPECT_TOLERANCE = 0.1;
         android.hardware.Camera.Size optimalSize = null;
         double minDiff = Double.MAX_VALUE;
-
         for (android.hardware.Camera.Size size : sizes) {
             double ratio = (double) size.width / size.height;
             if (Math.abs(ratio - targetRatio) < ASPECT_TOLERANCE) {
@@ -801,18 +723,15 @@ public class AddItemActivity extends AppCompatActivity {
                 }
             }
         }
-
         if (optimalSize == null && !sizes.isEmpty()) {
             optimalSize = sizes.get(0);
         }
-
         return optimalSize;
     }
 
     private String addDiscountData() {
         JSONArray discountsJsonArray = new JSONArray();
         double sumOfDiscounts = 0.0;
-
         for (int i = 0; i < discountAdapter.getItemCount() - 1; i++) {
             String discountStr = discountAdapter.getDiscountAt(i);
             if (!discountStr.trim().isEmpty()) {
@@ -830,12 +749,10 @@ public class AddItemActivity extends AppCompatActivity {
                 }
             }
         }
-
         if (sumOfDiscounts >= 100.0) {
             Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_SHORT).show();
             return null;
         }
-
         return discountsJsonArray.toString();
     }
 
@@ -843,7 +760,6 @@ public class AddItemActivity extends AppCompatActivity {
         String name = binding.edtTitle.getText().toString();
         String description = binding.edtDesc.getText().toString();
         String category = binding.edtCategory.getText().toString();
-
         int count;
         try {
             count = Integer.parseInt(binding.edtQuantity.getText().toString());
@@ -855,7 +771,6 @@ public class AddItemActivity extends AppCompatActivity {
             Toast.makeText(this, "Minimum quantity must be 1 to save the item.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         double price = 0.0;
         try {
             String priceString = binding.edtPrice.getText().toString();
@@ -870,12 +785,10 @@ public class AddItemActivity extends AppCompatActivity {
             return;
         }
         double totalBasePrice = price * count;
-
         String discountsJson = addDiscountData();
         if (discountsJson == null) {
             return;
         }
-
         JSONArray discountsJsonArray;
         double sumOfDiscounts = 0.0;
         try {
@@ -887,22 +800,18 @@ public class AddItemActivity extends AppCompatActivity {
             Toast.makeText(this, "An error occurred while processing discounts.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         double finalPrice;
         if (sumOfDiscounts >= 100.0) {
             finalPrice = 0.0;
         } else {
             finalPrice = calculateFinalPrice(totalBasePrice, discountsJsonArray);
         }
-
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-
         String imageData = null;
         String item_list_id = String.valueOf(System.currentTimeMillis());
         if (capturedImageBitmap != null) {
             imageData = saveImageToInternalStorage(capturedImageBitmap, item_list_id);
         }
-
         Item newItem = new Item(name, count, false, date);
         newItem.setDescription(description);
         newItem.setCategory(category);
@@ -913,9 +822,7 @@ public class AddItemActivity extends AppCompatActivity {
         newItem.setParentListId(parentListIdFromIntent);
         newItem.setTotalDiscountPercentage(sumOfDiscounts);
         newItem.setDiscountsJson(discountsJson);
-
         long newRowId = dbHelper.addItem(newItem);
-
         if (newRowId != -1) {
             Toast.makeText(this, "Item added successfully!", Toast.LENGTH_SHORT).show();
             finish();
@@ -933,7 +840,6 @@ public class AddItemActivity extends AppCompatActivity {
                     currentPrice -= (currentPrice * (discountPercentage / 100.0));
                 }
             } catch (JSONException e) {
-
             }
         }
         return Math.max(0, currentPrice);
@@ -968,17 +874,13 @@ public class AddItemActivity extends AppCompatActivity {
                 System.err.println("Invalid discount value found: " + discountItems.get(i) + ". Error: " + e.getMessage());
             }
         }
-
         if (totalCurrentDiscount > 100.0) {
             Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_LONG).show();
-
             double excess = totalCurrentDiscount - 100.0;
-
             if (!discountItems.isEmpty()) {
                 try {
                     double firstDiscount = Double.parseDouble(discountItems.get(0));
                     double newFirstDiscount = Math.max(0, firstDiscount - excess);
-
                     if (newFirstDiscount == Math.floor(newFirstDiscount)) {
                         discountItems.set(0, String.valueOf((int) newFirstDiscount));
                     } else {
@@ -991,7 +893,6 @@ public class AddItemActivity extends AppCompatActivity {
             } else {
                 discountItems.add("100");
             }
-
             discountAdapter.notifyDataSetChanged();
         }
     }
