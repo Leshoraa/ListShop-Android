@@ -45,23 +45,26 @@ public class Item {
     }
 
     public void recalculateFinalPrice() {
-        double basePrice = this.price * this.count;
-        double currentPrice = basePrice;
+        double totalBasePrice = this.price * this.count;
+        double totalDiscountPercentage = 0.0;
 
         if (this.discountsJson != null && !this.discountsJson.isEmpty()) {
             try {
                 JSONArray discounts = new JSONArray(this.discountsJson);
                 for (int i = 0; i < discounts.length(); i++) {
-                    double discountPercentage = discounts.getDouble(i);
-                    if (discountPercentage > 0) {
-                        currentPrice -= (currentPrice * (discountPercentage / 100.0));
-                    }
+                    totalDiscountPercentage += discounts.getDouble(i);
                 }
             } catch (JSONException e) {
-                currentPrice = basePrice;
+                totalDiscountPercentage = 0.0;
             }
         }
-        this.finalPrice = Math.max(0, currentPrice);
+
+        if (totalDiscountPercentage > 100.0) {
+            totalDiscountPercentage = 100.0;
+        }
+
+        double finalPriceResult = totalBasePrice * (1 - (totalDiscountPercentage / 100.0));
+        this.finalPrice = Math.max(0, finalPriceResult);
     }
 
     public int getId() { return id; }

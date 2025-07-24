@@ -114,21 +114,18 @@ public class PreviewItemActivity extends AppCompatActivity {
 
         discountAdapter.setOnEditTextChangeListener((position, text) -> {
             try {
-                String normalized = text.replace('.', ',');
-                DecimalFormatSymbols symbols1 = new DecimalFormatSymbols(Locale.getDefault());
-                symbols1.setDecimalSeparator(',');
-                DecimalFormat inputDecimalFormat = new DecimalFormat("#,##0.##", symbols1);
-                Number parsedNumber = inputDecimalFormat.parse(normalized.isEmpty() ? "0" : normalized);
-                double newDiscount = parsedNumber.doubleValue();
-
-                if (position < discounts.size()) {
-                    discounts.set(position, newDiscount);
-                    enforceMaxDiscount();
+                if (text.trim().isEmpty()) {
+                    discounts.set(position, 0.0);
+                } else {
+                    double newDiscount = Double.parseDouble(text.replace(',', '.'));
+                    if (position < discounts.size()) {
+                        discounts.set(position, newDiscount);
+                    }
                 }
-            } catch (ParseException e) {
+                enforceMaxDiscount();
+            } catch (NumberFormatException e) {
                 if (position < discounts.size()) {
                     discounts.set(position, 0.0);
-                    enforceMaxDiscount();
                 }
             }
         });
@@ -141,9 +138,8 @@ public class PreviewItemActivity extends AppCompatActivity {
                     return;
                 }
             }
-            discounts.add(null);
+            discounts.add(0.0);
             updateDiscountAdapterData();
-            enforceMaxDiscount();
             binding.rvEdtDiscount.scrollToPosition(discounts.size() - 1);
         });
 
@@ -180,7 +176,7 @@ public class PreviewItemActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 if (s.toString().equals(currentPriceString)) return;
                 binding.edtPrice.removeTextChangedListener(this);
-                String cleanString = s.toString().replaceAll("[^\\d]", "");
+                String cleanString = s.toString().replaceAll("[.]", "");
                 double parsed = 0;
                 try {
                     if (!cleanString.isEmpty()) {
@@ -220,9 +216,15 @@ public class PreviewItemActivity extends AppCompatActivity {
             }
         }
         if (totalDiscountPercentage > 100.0) totalDiscountPercentage = 100.0;
-        double finalPrice = (originalPrice * quantity) * (1 - (totalDiscountPercentage / 100));
+
+        Item tempItem = new Item(itemName, quantity, false, date);
+        tempItem.setPrice(originalPrice);
+        tempItem.setDiscountsJson(new Gson().toJson(discounts));
+        tempItem.recalculateFinalPrice();
+
         String formattedDiscount = new DecimalFormat("#.##").format(totalDiscountPercentage) + "%";
-        String formattedFinalPrice = decimalFormat.format(finalPrice);
+        String formattedFinalPrice = decimalFormat.format(tempItem.getFinalPrice());
+
         String details = "Item name: " + itemName + "\n\n" +
                 "Description: " + (description.isEmpty() ? "-" : description) + "\n\n" +
                 "Category: " + (category.isEmpty() ? "-" : category) + "\n\n" +
@@ -243,7 +245,7 @@ public class PreviewItemActivity extends AppCompatActivity {
     }
 
     private String formatDiscountForDisplay(Double discount) {
-        if (discount == null) return "";
+        if (discount == null || discount == 0.0) return "";
         if (discount == discount.intValue()) {
             return String.valueOf(discount.intValue());
         }
@@ -275,7 +277,7 @@ public class PreviewItemActivity extends AppCompatActivity {
             }
         }
         if (discounts.isEmpty()) {
-            discounts.add(null);
+            discounts.add(0.0);
         }
         updateDiscountAdapterData();
         binding.edtPrice.setText(decimalFormat.format(currentItem.getPrice()));
@@ -360,8 +362,9 @@ public class PreviewItemActivity extends AppCompatActivity {
             return;
         }
         try {
-            currentItem.setPrice(decimalFormat.parse(binding.edtPrice.getText().toString()).doubleValue());
-        } catch (ParseException e) {
+            String cleanPrice = binding.edtPrice.getText().toString().replaceAll("[.]", "");
+            currentItem.setPrice(Double.parseDouble(cleanPrice));
+        } catch (NumberFormatException e) {
             Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
             return;
         }
