@@ -66,7 +66,7 @@
 
 You can try the latest beta version of the app by downloading the APK file below:
 
-➡️ **[ListShop APK (v1.0-beta)](https://github.com/Leshoraa/ListShop-Android/releases/download/v1.0-beta/ListShop.apk)**
+➡️ **[ListShop APK (v1.1-beta)](https://github.com/Leshoraa/ListShop-Android/releases/download/v1.1-beta/ListShop.apk)**
 
 > ⚠️ *This is a beta release and may contain bugs. Feel free to report issues or feedback!*
 
