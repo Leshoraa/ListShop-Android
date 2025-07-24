@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,30 +36,14 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
     private int recentlyDeletedItemPosition;
     private RecyclerView recyclerView;
 
-    public interface OnItemDeleteListener {
-        void onDelete(int itemId);
-    }
-
-    public interface OnItemClickListener {
-        void onItemClick(int position);
-    }
-
-    public interface OnItemQuantityChangeListener {
-        void onQuantityChanged(int itemId, int newQuantity);
-    }
+    public interface OnItemDeleteListener { void onDelete(int itemId); }
+    public interface OnItemClickListener { void onItemClick(int position); }
+    public interface OnItemQuantityChangeListener { void onQuantityChanged(int itemId, int newQuantity); }
     private OnItemQuantityChangeListener onItemQuantityChangeListener;
 
-    public void setOnItemDeleteListener(OnItemDeleteListener listener) {
-        this.onItemDeleteListener = listener;
-    }
-
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.onItemClickListener = listener;
-    }
-
-    public void setOnItemQuantityChangeListener(OnItemQuantityChangeListener listener) {
-        this.onItemQuantityChangeListener = listener;
-    }
+    public void setOnItemDeleteListener(OnItemDeleteListener listener) { this.onItemDeleteListener = listener; }
+    public void setOnItemClickListener(OnItemClickListener listener) { this.onItemClickListener = listener; }
+    public void setOnItemQuantityChangeListener(OnItemQuantityChangeListener listener) { this.onItemQuantityChangeListener = listener; }
 
     public ItemListAdapter(Context context, List<Item> items) {
         this.context = context;
@@ -82,13 +65,12 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
     @Override
     public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ListItem1Binding binding = ListItem1Binding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
-        return new ItemViewHolder(binding, this, onItemClickListener, onItemQuantityChangeListener);
+        return new ItemViewHolder(binding, this, onItemClickListener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
         Item item = items.get(position);
-
         holder.binding.tvListTitle.setText(item.getName());
         holder.binding.tvListCategory.setText(item.getCategory());
         holder.binding.tvListPrice.setText(decimalFormat.format(item.getFinalPrice()));
@@ -131,7 +113,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         } else {
             holder.binding.imgItemPreview.setImageResource(R.drawable.ic_launcher_background);
         }
-
         holder.setDeleteItemVisibility(View.VISIBLE);
         holder.binding.deleteItem.setTranslationX(0f);
     }
@@ -175,7 +156,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                 recyclerView.scrollToPosition(recentlyDeletedItemPosition);
             }
             recentlyDeletedItem = null;
-            recentlyDeletedItemPosition = -1;
         }
     }
 
@@ -185,7 +165,6 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                 onItemDeleteListener.onDelete(recentlyDeletedItem.getId());
             }
             recentlyDeletedItem = null;
-            recentlyDeletedItemPosition = -1;
         }
     }
 
@@ -193,20 +172,15 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         public final ListItem1Binding binding;
         TextWatcher quantityTextWatcher;
 
-        public ItemViewHolder(@NonNull ListItem1Binding binding,
-                              ItemListAdapter adapter,
-                              OnItemClickListener clickListener,
-                              OnItemQuantityChangeListener quantityChangeListener) {
+        public ItemViewHolder(@NonNull ListItem1Binding binding, ItemListAdapter adapter, OnItemClickListener clickListener) {
             super(binding.getRoot());
             this.binding = binding;
-
             binding.deleteItem.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     adapter.removeItem(position);
                 }
             });
-
             binding.getRoot().setOnClickListener(v -> {
                 if (clickListener != null) {
                     int position = getAdapterPosition();
@@ -218,10 +192,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         }
 
         public void setDeleteItemVisibility(int visibility) {
-            if (binding.deleteItem.getVisibility() == visibility) {
-                return;
-            }
-
+            if (binding.deleteItem.getVisibility() == visibility) return;
             if (visibility == View.GONE) {
                 ObjectAnimator animator = ObjectAnimator.ofFloat(binding.deleteItem, "translationX", 0f, binding.deleteItem.getWidth());
                 animator.setDuration(200);
@@ -259,10 +230,8 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
         @Override
         public void afterTextChanged(Editable s) {
             String quantityString = s.toString();
@@ -285,13 +254,9 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
 
             if (item.getCount() != newQuantity) {
                 item.setCount(newQuantity);
-
-                double newFinalPrice = item.getPrice() * newQuantity;
-                item.setFinalPrice(newFinalPrice);
-
-                holder.binding.tvListPrice.setText(decimalFormat.format(newFinalPrice));
-
-                dbHelper.updateItemQuantity(item.getId(), newQuantity);
+                item.recalculateFinalPrice();
+                holder.binding.tvListPrice.setText(decimalFormat.format(item.getFinalPrice()));
+                dbHelper.updateItemPriceAndQuantity(item.getId(), item.getCount(), item.getFinalPrice());
                 if (listener != null) {
                     listener.onQuantityChanged(item.getId(), newQuantity);
                 }

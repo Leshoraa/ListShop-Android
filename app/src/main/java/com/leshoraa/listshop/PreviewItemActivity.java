@@ -1,6 +1,7 @@
 package com.leshoraa.listshop;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -55,22 +56,10 @@ public class PreviewItemActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-
         binding = ActivityPreviewItemBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         dbHelper = new DatabaseHelper(this);
-
-        int itemId = getIntent().getIntExtra("item_id", -1);
-        if (itemId != -1) {
-            currentItem = dbHelper.getItemById(itemId);
-            if (currentItem != null) {
-            } else {
-                Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        } else {
-        }
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
@@ -134,13 +123,11 @@ public class PreviewItemActivity extends AppCompatActivity {
 
                 if (position < discounts.size()) {
                     discounts.set(position, newDiscount);
-                    calculateAndDisplayTotalDiscount();
                     enforceMaxDiscount();
                 }
             } catch (ParseException e) {
                 if (position < discounts.size()) {
                     discounts.set(position, 0.0);
-                    calculateAndDisplayTotalDiscount();
                     enforceMaxDiscount();
                 }
             }
@@ -163,9 +150,15 @@ public class PreviewItemActivity extends AppCompatActivity {
         if (getIntent() != null && getIntent().hasExtra(ListActivity.EXTRA_SELECTED_ITEM_ID)) {
             selectedItemId = getIntent().getIntExtra(ListActivity.EXTRA_SELECTED_ITEM_ID, -1);
             if (selectedItemId != -1) {
-                loadItemData(selectedItemId);
+                currentItem = dbHelper.getItemById(selectedItemId);
+                if (currentItem != null) {
+                    loadItemData();
+                } else {
+                    Toast.makeText(this, "Item not found.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
             } else {
-                Toast.makeText(this, "Item ID not found.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Invalid Item ID.", Toast.LENGTH_SHORT).show();
                 finish();
             }
         } else {
@@ -175,45 +168,32 @@ public class PreviewItemActivity extends AppCompatActivity {
 
         binding.back.setOnClickListener(v -> onBackPressed());
         binding.btnSaveItem.setOnClickListener(v -> saveItemChanges());
-        binding.copy.setOnClickListener(v -> copyItemDetailsToClipboard()   );
-
+        binding.copy.setOnClickListener(v -> copyItemDetailsToClipboard());
         binding.tvReducequantity.setOnClickListener(v -> updateQuantity(-1));
         binding.tvAddquantity.setOnClickListener(v -> updateQuantity(1));
-
         binding.edtPrice.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
-                if (s.toString().equals(currentPriceString)) {
-                    return;
-                }
-
+                if (s.toString().equals(currentPriceString)) return;
                 binding.edtPrice.removeTextChangedListener(this);
-
-                String cleanString = s.toString().replaceAll("[^\\d,]", "");
+                String cleanString = s.toString().replaceAll("[^\\d]", "");
                 double parsed = 0;
                 try {
                     if (!cleanString.isEmpty()) {
-                        DecimalFormat inputDecimalFormat = new DecimalFormat("#,##0.##", new DecimalFormatSymbols(Locale.getDefault()));
-                        Number parsedNumber = inputDecimalFormat.parse(cleanString);
-                        parsed = parsedNumber.doubleValue();
+                        parsed = Double.parseDouble(cleanString);
                     }
-                } catch (ParseException e) {
+                } catch (NumberFormatException e) {
                     parsed = 0;
                 }
-
                 String formatted = decimalFormat.format(parsed);
                 currentPriceString = formatted;
                 binding.edtPrice.setText(formatted);
                 binding.edtPrice.setSelection(formatted.length());
-
                 binding.edtPrice.addTextChangedListener(this);
-                calculateAndDisplayTotalDiscount();
             }
         });
     }
@@ -225,52 +205,34 @@ public class PreviewItemActivity extends AppCompatActivity {
         String priceString = binding.edtPrice.getText().toString();
         String quantityStr = binding.edtQuantity.getText().toString();
         String date = binding.dateItem.getText().toString();
-
         double originalPrice = 0.0;
         try {
-            Number parsedNumber = decimalFormat.parse(priceString);
-            if (parsedNumber != null) {
-                originalPrice = parsedNumber.doubleValue();
-            }
+            originalPrice = decimalFormat.parse(priceString).doubleValue();
         } catch (ParseException e) {
-            Toast.makeText(this, "Format price not valid.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Invalid price format.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         int quantity = Integer.parseInt(quantityStr);
-
         double totalDiscountPercentage = 0.0;
         for (Double discount : discounts) {
             if (discount != null) {
                 totalDiscountPercentage += discount;
             }
         }
-        if (totalDiscountPercentage > 100.0) {
-            totalDiscountPercentage = 100.0;
-        }
-
+        if (totalDiscountPercentage > 100.0) totalDiscountPercentage = 100.0;
         double finalPrice = (originalPrice * quantity) * (1 - (totalDiscountPercentage / 100));
-
-        String formattedPrice = priceString;
         String formattedDiscount = new DecimalFormat("#.##").format(totalDiscountPercentage) + "%";
         String formattedFinalPrice = decimalFormat.format(finalPrice);
-
-        StringBuilder detailsBuilder = new StringBuilder();
-        detailsBuilder.append("Item name: ").append(itemName).append("\n\n");
-        detailsBuilder.append("Description: ").append(description.isEmpty() ? "-" : description).append("\n\n");
-        detailsBuilder.append("Category: ").append(category.isEmpty() ? "-" : category).append("\n\n");
-        detailsBuilder.append("Price: ").append(formattedPrice)
-                .append(" (Disc: ").append(formattedDiscount).append(")")
-                .append(" = ").append(formattedFinalPrice).append("\n\n");
-        detailsBuilder.append("Quantity: ").append(quantityStr).append("\n\n");
-        detailsBuilder.append("Date: ").append(date);
-
+        String details = "Item name: " + itemName + "\n\n" +
+                "Description: " + (description.isEmpty() ? "-" : description) + "\n\n" +
+                "Category: " + (category.isEmpty() ? "-" : category) + "\n\n" +
+                "Price: " + priceString + " (Disc: " + formattedDiscount + ") = " + formattedFinalPrice + "\n\n" +
+                "Quantity: " + quantityStr + "\n\n" +
+                "Date: " + date;
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("Item Details", detailsBuilder.toString());
+        ClipData clip = ClipData.newPlainText("Item Details", details);
         clipboard.setPrimaryClip(clip);
-
-        Toast.makeText(this, "Copying: " + itemName, Toast.LENGTH_SHORT).show();
-
+        Toast.makeText(this, "Copied: " + itemName, Toast.LENGTH_SHORT).show();
     }
 
     private int calculateDiscountColumns(int itemWidthDp) {
@@ -281,16 +243,11 @@ public class PreviewItemActivity extends AppCompatActivity {
     }
 
     private String formatDiscountForDisplay(Double discount) {
-        if (discount == null) {
-            return "";
+        if (discount == null) return "";
+        if (discount == discount.intValue()) {
+            return String.valueOf(discount.intValue());
         }
-        if (Math.abs(discount - Math.round(discount)) < 0.0001) {
-            return String.format(Locale.getDefault(), "%.0f", discount);
-        } else if (Math.round(discount * 10) == discount * 10) {
-            return String.format(Locale.getDefault(), "%.1f", discount);
-        } else {
-            return String.format(Locale.getDefault(), "%.2f", discount).replaceAll("0+$", "").replaceAll("[.,]$", "");
-        }
+        return String.valueOf(discount);
     }
 
     private void updateDiscountAdapterData() {
@@ -299,143 +256,70 @@ public class PreviewItemActivity extends AppCompatActivity {
             discountStrings.add(formatDiscountForDisplay(d));
         }
         discountAdapter.updateData(discountStrings);
-        calculateAndDisplayTotalDiscount();
     }
 
-
     @SuppressLint("SetTextI18n")
-    private void loadItemData(int itemId) {
-        Item item = dbHelper.getItemById(itemId);
-        if (item != null) {
-            binding.edtTitle.setText(item.getName());
-            binding.edtDesc.setText(item.getDescription());
-            binding.edtCategory.setText(item.getCategory());
-            binding.edtQuantity.setText(String.valueOf(item.getCount()));
-            loadDate(item.getDate());
-
-            discounts.clear();
-            if (item.getDiscountsJson() != null && !item.getDiscountsJson().isEmpty()) {
-                Gson gson = new Gson();
-                Type type = new TypeToken<List<Double>>() {}.getType();
-                List<Double> loadedDiscounts = gson.fromJson(item.getDiscountsJson(), type);
-                if (loadedDiscounts != null) {
-                    discounts.addAll(loadedDiscounts);
-                }
+    private void loadItemData() {
+        binding.edtTitle.setText(currentItem.getName());
+        binding.edtDesc.setText(currentItem.getDescription());
+        binding.edtCategory.setText(currentItem.getCategory());
+        binding.edtQuantity.setText(String.valueOf(currentItem.getCount()));
+        loadDate(currentItem.getDate());
+        discounts.clear();
+        if (currentItem.getDiscountsJson() != null && !currentItem.getDiscountsJson().isEmpty()) {
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<Double>>() {}.getType();
+            List<Double> loadedDiscounts = gson.fromJson(currentItem.getDiscountsJson(), type);
+            if (loadedDiscounts != null) {
+                discounts.addAll(loadedDiscounts);
             }
-
-            if (discounts.isEmpty()) {
-                discounts.add(null);
-            }
-            updateDiscountAdapterData();
-
-            binding.edtPrice.setText(decimalFormat.format(item.getPrice()));
-
-            if (item.getImageData() != null && !item.getImageData().isEmpty()) {
-                File imgFile = new File(getFilesDir(), item.getImageData());
-                if (imgFile.exists()) {
-                    Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-                    binding.imageViewCaptured.setImageBitmap(myBitmap);
-                    binding.imageViewCaptured.setVisibility(View.VISIBLE);
-                } else {
-                    binding.imageViewCaptured.setVisibility(View.GONE);
-                }
+        }
+        if (discounts.isEmpty()) {
+            discounts.add(null);
+        }
+        updateDiscountAdapterData();
+        binding.edtPrice.setText(decimalFormat.format(currentItem.getPrice()));
+        if (currentItem.getImageData() != null && !currentItem.getImageData().isEmpty()) {
+            File imgFile = new File(getFilesDir(), currentItem.getImageData());
+            if (imgFile.exists()) {
+                Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                binding.imageViewCaptured.setImageBitmap(myBitmap);
+                binding.imageViewCaptured.setVisibility(View.VISIBLE);
             } else {
                 binding.imageViewCaptured.setVisibility(View.GONE);
             }
-            calculateAndDisplayTotalDiscount();
         } else {
-            Toast.makeText(this, "Failed to load item data.", Toast.LENGTH_SHORT).show();
-            finish();
+            binding.imageViewCaptured.setVisibility(View.GONE);
         }
     }
 
     private void updateQuantity(int change) {
-        String currentQuantityString = binding.edtQuantity.getText().toString();
-        int currentQuantity = 0;
         try {
-            currentQuantity = Integer.parseInt(currentQuantityString);
+            int currentQuantity = Integer.parseInt(binding.edtQuantity.getText().toString());
+            int newQuantity = Math.max(1, currentQuantity + change);
+            binding.edtQuantity.setText(String.valueOf(newQuantity));
         } catch (NumberFormatException e) {
+            binding.edtQuantity.setText("1");
         }
-
-        int newQuantity = currentQuantity + change;
-        if (newQuantity < 1) {
-            newQuantity = 1;
-        }
-        binding.edtQuantity.setText(String.valueOf(newQuantity));
-        calculateAndDisplayTotalDiscount();
-    }
-
-
-    @SuppressLint("SetTextI18n")
-    private void calculateAndDisplayTotalDiscount() {
-        double originalPrice = 0.0;
-        try {
-            String priceString = binding.edtPrice.getText().toString();
-            Number parsedNumber = decimalFormat.parse(priceString.isEmpty() ? "0" : priceString);
-            originalPrice = parsedNumber.doubleValue();
-        } catch (ParseException | NumberFormatException e) {
-            originalPrice = 0.0;
-        }
-
-        int quantity = 0;
-        try {
-            quantity = Integer.parseInt(binding.edtQuantity.getText().toString());
-        } catch (NumberFormatException e) {
-            quantity = 0;
-        }
-
-        double totalBasePrice = originalPrice * quantity;
-        double totalCombinedDiscountPercentage = 0.0;
-
-        for (Double discount : discounts) {
-            if (discount != null) {
-                totalCombinedDiscountPercentage += discount;
-            }
-        }
-
-        if (totalCombinedDiscountPercentage > 100.0) {
-            totalCombinedDiscountPercentage = 100.0;
-        }
-
-        double finalPrice = totalBasePrice * (1 - (totalCombinedDiscountPercentage / 100));
-
-        if (finalPrice < 0.0) {
-            finalPrice = 0.0;
-        }
-
-        //binding.tvTotalPrice.setText(decimalFormat.format(finalPrice));
     }
 
     private void enforceMaxDiscount() {
         double totalCurrentDiscount = 0.0;
-
         for (Double discount : discounts) {
             if (discount != null) {
                 totalCurrentDiscount += discount;
             }
         }
-
         if (totalCurrentDiscount > 100.0) {
             Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_LONG).show();
-
             double excess = totalCurrentDiscount - 100.0;
-
             for (int i = discounts.size() - 1; i >= 0; i--) {
                 Double discount = discounts.get(i);
                 if (discount != null && discount > 0) {
                     double newDiscount = Math.max(0, discount - excess);
                     discounts.set(i, newDiscount);
-                    double newTotal = 0.0;
-                    for (Double d : discounts) {
-                        if (d != null) {
-                            newTotal += d;
-                        }
-                    }
-                    if (newTotal <= 100.0) {
-                        break;
-                    } else {
-                        excess = newTotal - 100.0;
-                    }
+                    excess -= (discount - newDiscount);
+                    if (excess <= 0) break;
                 }
             }
             updateDiscountAdapterData();
@@ -447,99 +331,55 @@ public class PreviewItemActivity extends AppCompatActivity {
             binding.dateItem.setText("No Date");
             return;
         }
-
         SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         SimpleDateFormat outputFormat = new SimpleDateFormat("d MMM yyyy", Locale.getDefault());
-
         try {
             Date date = inputFormat.parse(dateString);
             if (date != null) {
-                String formattedDate = outputFormat.format(date);
-                binding.dateItem.setText(formattedDate);
+                binding.dateItem.setText(outputFormat.format(date));
             }
         } catch (ParseException e) {
-            e.printStackTrace();
             binding.dateItem.setText(dateString);
         }
     }
+
     private void saveItemChanges() {
-        if (!discounts.isEmpty()) {
-            Double lastDiscountValue = discounts.get(discounts.size() - 1);
+        if (currentItem == null) return;
+        currentItem.setName(binding.edtTitle.getText().toString());
+        currentItem.setDescription(binding.edtDesc.getText().toString());
+        currentItem.setCategory(binding.edtCategory.getText().toString());
+        try {
+            int count = Integer.parseInt(binding.edtQuantity.getText().toString());
+            if (count < 1) {
+                Toast.makeText(this, "Quantity cannot be less than 1.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            currentItem.setCount(count);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid quantity amount.", Toast.LENGTH_SHORT).show();
+            return;
         }
-
-        Item item = dbHelper.getItemById(selectedItemId);
-        if (item != null) {
-            item.setName(binding.edtTitle.getText().toString());
-            item.setDescription(binding.edtDesc.getText().toString());
-            item.setCategory(binding.edtCategory.getText().toString());
-
-            int count;
-            try {
-                count = Integer.parseInt(binding.edtQuantity.getText().toString());
-                if (count < 1) {
-                    Toast.makeText(this, "Quantity cannot be less than 1.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "Invalid quantity amount.", Toast.LENGTH_SHORT).show();
-                return;
+        try {
+            currentItem.setPrice(decimalFormat.parse(binding.edtPrice.getText().toString()).doubleValue());
+        } catch (ParseException e) {
+            Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<Double> discountsToSave = new ArrayList<>();
+        for (Double d : discounts) {
+            if (d != null && d > 0) {
+                discountsToSave.add(d);
             }
-            item.setCount(count);
-
-            double originalPrice = 0.0;
-            try {
-                String priceString = binding.edtPrice.getText().toString();
-                Number parsedNumber = decimalFormat.parse(priceString);
-                originalPrice = parsedNumber.doubleValue();
-
-            } catch (ParseException e) {
-                Toast.makeText(this, "Please enter a valid price format (e.g., 10.000 or 10.000,50).", Toast.LENGTH_LONG).show();
-                return;
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            item.setPrice(originalPrice);
-
-            List<Double> discountsToSave = new ArrayList<>();
-            for (Double d : discounts) {
-                if (d != null && d != 0.0) {
-                    discountsToSave.add(d);
-                }
-            }
-            Gson gson = new Gson();
-            if (discountsToSave.isEmpty()) {
-                item.setDiscountsJson(null);
-            } else {
-                item.setDiscountsJson(gson.toJson(discountsToSave));
-            }
-
-            double totalBasePrice = item.getPrice() * item.getCount();
-            double totalCombinedDiscountPercentage = 0.0;
-            for (Double discount : discountsToSave) {
-                if (discount != null) {
-                    totalCombinedDiscountPercentage += discount;
-                }
-            }
-
-            if (totalCombinedDiscountPercentage > 100.0) {
-                totalCombinedDiscountPercentage = 100.0;
-            }
-            item.setTotalDiscountPercentage(totalCombinedDiscountPercentage);
-
-            double finalPrice = totalBasePrice * (1 - (totalCombinedDiscountPercentage / 100));
-            if (finalPrice < 0.0) {
-                finalPrice = 0.0;
-            }
-            item.setFinalPrice(finalPrice);
-
-            int rowsAffected = dbHelper.updateItem(item);
-            if (rowsAffected > 0) {
-                Toast.makeText(this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
-                finish();
-            } else {
-                Toast.makeText(this, "Failed to update item.", Toast.LENGTH_SHORT).show();
-            }
+        }
+        currentItem.setDiscountsJson(new Gson().toJson(discountsToSave));
+        currentItem.recalculateFinalPrice();
+        int rowsAffected = dbHelper.updateItem(currentItem);
+        if (rowsAffected > 0) {
+            Toast.makeText(this, "Item updated successfully!", Toast.LENGTH_SHORT).show();
+            setResult(Activity.RESULT_OK);
+            finish();
+        } else {
+            Toast.makeText(this, "Failed to update item.", Toast.LENGTH_SHORT).show();
         }
     }
 

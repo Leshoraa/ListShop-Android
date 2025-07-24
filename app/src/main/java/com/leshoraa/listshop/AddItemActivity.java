@@ -1,6 +1,7 @@
 package com.leshoraa.listshop;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -223,13 +224,10 @@ public class AddItemActivity extends AppCompatActivity {
 
         binding.edtPrice.addTextChangedListener(new TextWatcher() {
             private String current = "";
-
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
                 if (!s.toString().equals(current)) {
@@ -256,7 +254,6 @@ public class AddItemActivity extends AppCompatActivity {
                 }
             }
         });
-
         binding.btnSaveItem.setOnClickListener(v -> addItemToDatabase());
     }
 
@@ -379,12 +376,10 @@ public class AddItemActivity extends AppCompatActivity {
             });
             return;
         }
-
         String currentModel = GEMINI_MODELS.get(currentModelIndex);
         binding.edtTitle.setText("Analyzing image...");
         binding.edtDesc.setText("Please wait, identifying object...");
         binding.edtCategory.setText("Identifying category...");
-
         Bitmap resizedImage = resizeBitmap(image, 1200, 1200);
         if (resizedImage == null) {
             Toast.makeText(this, "Failed to process image.", Toast.LENGTH_LONG).show();
@@ -393,7 +388,6 @@ public class AddItemActivity extends AppCompatActivity {
             binding.edtCategory.setText("Error");
             return;
         }
-
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         resizedImage.compress(Bitmap.CompressFormat.JPEG, 70, stream);
         String base64Image = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
@@ -454,9 +448,7 @@ public class AddItemActivity extends AppCompatActivity {
                     if (!response.isSuccessful()) {
                         if (response.code() == 404 || response.code() == 503 || response.code() == 429) {
                             currentModelIndex++;
-                            runOnUiThread(() -> {
-                                analyzeImageWithGemini(capturedImageBitmap);
-                            });
+                            runOnUiThread(() -> analyzeImageWithGemini(capturedImageBitmap));
                         } else {
                             runOnUiThread(() -> {
                                 Toast.makeText(AddItemActivity.this, "API response unsuccessful: " + response.code() + " - " + resBody, Toast.LENGTH_LONG).show();
@@ -480,7 +472,6 @@ public class AddItemActivity extends AppCompatActivity {
                                     runOnUiThread(() -> processGeminiResponse(generatedText));
                                 } else {
                                     runOnUiThread(() -> {
-                                        Toast.makeText(AddItemActivity.this, "Empty Gemini response or no text generated.", Toast.LENGTH_SHORT).show();
                                         binding.edtTitle.setText("Not Found");
                                         binding.edtDesc.setText("No description generated.");
                                         binding.edtCategory.setText("Not Found");
@@ -488,7 +479,6 @@ public class AddItemActivity extends AppCompatActivity {
                                 }
                             } else {
                                 runOnUiThread(() -> {
-                                    Toast.makeText(AddItemActivity.this, "No text parts in Gemini response.", Toast.LENGTH_SHORT).show();
                                     binding.edtTitle.setText("Not Found");
                                     binding.edtDesc.setText("No description generated.");
                                     binding.edtCategory.setText("Not Found");
@@ -496,7 +486,6 @@ public class AddItemActivity extends AppCompatActivity {
                             }
                         } else {
                             runOnUiThread(() -> {
-                                Toast.makeText(AddItemActivity.this, "No content in Gemini response candidate.", Toast.LENGTH_SHORT).show();
                                 binding.edtTitle.setText("Not Found");
                                 binding.edtDesc.setText("No description generated.");
                                 binding.edtCategory.setText("Not Found");
@@ -517,14 +506,12 @@ public class AddItemActivity extends AppCompatActivity {
                                     }
                                 }
                                 runOnUiThread(() -> {
-                                    Toast.makeText(AddItemActivity.this, safetyMsg.toString().trim(), Toast.LENGTH_LONG).show();
                                     binding.edtTitle.setText("AI Blocked");
                                     binding.edtDesc.setText(safetyMsg.toString().trim());
                                     binding.edtCategory.setText("Blocked");
                                 });
                             } else {
                                 runOnUiThread(() -> {
-                                    Toast.makeText(AddItemActivity.this, "No candidates or block details. " + (resBody.length() > 100 ? resBody.substring(0, 100) + "..." : resBody), Toast.LENGTH_LONG).show();
                                     binding.edtTitle.setText("Unknown Error");
                                     binding.edtDesc.setText("No description generated.");
                                     binding.edtCategory.setText("Error");
@@ -532,7 +519,6 @@ public class AddItemActivity extends AppCompatActivity {
                             }
                         } else {
                             runOnUiThread(() -> {
-                                Toast.makeText(AddItemActivity.this, "No candidates or Gemini response. " + (resBody.length() > 100 ? resBody.substring(0, 100) + "..." : resBody), Toast.LENGTH_SHORT).show();
                                 binding.edtTitle.setText("Not Found");
                                 binding.edtDesc.setText("No description generated.");
                                 binding.edtCategory.setText("Not Found");
@@ -687,18 +673,10 @@ public class AddItemActivity extends AppCompatActivity {
         int rotation = displayRotation;
         int degrees = 0;
         switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                degrees = 270;
-                break;
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
         }
         int result;
         if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
@@ -732,9 +710,9 @@ public class AddItemActivity extends AppCompatActivity {
     private String addDiscountData() {
         JSONArray discountsJsonArray = new JSONArray();
         double sumOfDiscounts = 0.0;
-        for (int i = 0; i < discountAdapter.getItemCount() - 1; i++) {
+        for (int i = 0; i < discountAdapter.getItemCount(); i++) {
             String discountStr = discountAdapter.getDiscountAt(i);
-            if (!discountStr.trim().isEmpty()) {
+            if (discountStr != null && !discountStr.trim().isEmpty()) {
                 try {
                     double discountValue = Double.parseDouble(discountStr);
                     if (discountValue < 0 || discountValue > 100) {
@@ -748,10 +726,6 @@ public class AddItemActivity extends AppCompatActivity {
                     return null;
                 }
             }
-        }
-        if (sumOfDiscounts >= 100.0) {
-            Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_SHORT).show();
-            return null;
         }
         return discountsJsonArray.toString();
     }
@@ -773,38 +747,17 @@ public class AddItemActivity extends AppCompatActivity {
         }
         double price = 0.0;
         try {
-            String priceString = binding.edtPrice.getText().toString();
-            String cleanPriceString = priceString.replaceAll("[.]", "");
-            if (cleanPriceString.isEmpty()) {
-                price = 0.0;
-            } else {
-                price = Double.parseDouble(cleanPriceString);
+            String priceString = binding.edtPrice.getText().toString().replaceAll("[.]", "");
+            if (!priceString.isEmpty()) {
+                price = Double.parseDouble(priceString);
             }
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
             return;
         }
-        double totalBasePrice = price * count;
         String discountsJson = addDiscountData();
         if (discountsJson == null) {
             return;
-        }
-        JSONArray discountsJsonArray;
-        double sumOfDiscounts = 0.0;
-        try {
-            discountsJsonArray = new JSONArray(discountsJson);
-            for (int i = 0; i < discountsJsonArray.length(); i++) {
-                sumOfDiscounts += discountsJsonArray.getDouble(i);
-            }
-        } catch (JSONException e) {
-            Toast.makeText(this, "An error occurred while processing discounts.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        double finalPrice;
-        if (sumOfDiscounts >= 100.0) {
-            finalPrice = 0.0;
-        } else {
-            finalPrice = calculateFinalPrice(totalBasePrice, discountsJsonArray);
         }
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
         String imageData = null;
@@ -817,32 +770,18 @@ public class AddItemActivity extends AppCompatActivity {
         newItem.setCategory(category);
         newItem.setImageData(imageData);
         newItem.setPrice(price);
-        newItem.setFinalPrice(finalPrice);
+        newItem.setDiscountsJson(discountsJson);
+        newItem.recalculateFinalPrice();
         newItem.setItemListId(item_list_id);
         newItem.setParentListId(parentListIdFromIntent);
-        newItem.setTotalDiscountPercentage(sumOfDiscounts);
-        newItem.setDiscountsJson(discountsJson);
         long newRowId = dbHelper.addItem(newItem);
         if (newRowId != -1) {
             Toast.makeText(this, "Item added successfully!", Toast.LENGTH_SHORT).show();
+            setResult(Activity.RESULT_OK);
             finish();
         } else {
             Toast.makeText(this, "Failed to add item.", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private double calculateFinalPrice(double originalPrice, JSONArray discounts) {
-        double currentPrice = originalPrice;
-        for (int i = 0; i < discounts.length(); i++) {
-            try {
-                double discountPercentage = discounts.getDouble(i);
-                if (discountPercentage > 0) {
-                    currentPrice -= (currentPrice * (discountPercentage / 100.0));
-                }
-            } catch (JSONException e) {
-            }
-        }
-        return Math.max(0, currentPrice);
     }
 
     private String saveImageToInternalStorage(Bitmap bitmap, String filenameId) {
@@ -868,10 +807,11 @@ public class AddItemActivity extends AppCompatActivity {
         double totalCurrentDiscount = 0.0;
         for (int i = 0; i < discountItems.size(); i++) {
             try {
-                double discountValue = Double.parseDouble(discountItems.get(i));
-                totalCurrentDiscount += discountValue;
+                if (!discountItems.get(i).isEmpty()) {
+                    double discountValue = Double.parseDouble(discountItems.get(i));
+                    totalCurrentDiscount += discountValue;
+                }
             } catch (NumberFormatException e) {
-                System.err.println("Invalid discount value found: " + discountItems.get(i) + ". Error: " + e.getMessage());
             }
         }
         if (totalCurrentDiscount > 100.0) {
@@ -879,15 +819,12 @@ public class AddItemActivity extends AppCompatActivity {
             double excess = totalCurrentDiscount - 100.0;
             if (!discountItems.isEmpty()) {
                 try {
-                    double firstDiscount = Double.parseDouble(discountItems.get(0));
-                    double newFirstDiscount = Math.max(0, firstDiscount - excess);
-                    if (newFirstDiscount == Math.floor(newFirstDiscount)) {
-                        discountItems.set(0, String.valueOf((int) newFirstDiscount));
-                    } else {
+                    if (!discountItems.get(0).isEmpty()) {
+                        double firstDiscount = Double.parseDouble(discountItems.get(0));
+                        double newFirstDiscount = Math.max(0, firstDiscount - excess);
                         discountItems.set(0, String.valueOf(newFirstDiscount));
                     }
                 } catch (NumberFormatException e) {
-                    System.err.println("First discount item is invalid, setting to 100. Error: " + e.getMessage());
                     discountItems.set(0, "100");
                 }
             } else {

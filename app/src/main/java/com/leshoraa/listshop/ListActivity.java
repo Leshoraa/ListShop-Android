@@ -1,6 +1,7 @@
 package com.leshoraa.listshop;
 
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,7 +11,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
@@ -21,6 +21,8 @@ import android.widget.Toast;
 import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -61,6 +63,8 @@ public class ListActivity extends AppCompatActivity {
     private int currentParentListId;
     private DecimalFormat decimalFormat;
     private boolean isTodoVisible = false;
+    private ActivityResultLauncher<Intent> previewLauncher;
+    private ActivityResultLauncher<Intent> addItemLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +75,24 @@ public class ListActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         dbHelper = new DatabaseHelper(this);
+
+        previewLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        loadItems();
+                    }
+                }
+        );
+
+        addItemLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        loadItems();
+                    }
+                }
+        );
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
@@ -130,10 +152,8 @@ public class ListActivity extends AppCompatActivity {
         binding.marketName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
                 if (currentParentListId != -1) {
@@ -146,7 +166,7 @@ public class ListActivity extends AppCompatActivity {
         binding.btnAddItem.setOnClickListener(v -> {
             Intent intent = new Intent(ListActivity.this, AddItemActivity.class);
             intent.putExtra(EXTRA_ITEM_ID, currentParentListId);
-            startActivity(intent);
+            addItemLauncher.launch(intent);
         });
 
         binding.back.setOnClickListener(v -> onBackPressed());
@@ -189,7 +209,7 @@ public class ListActivity extends AppCompatActivity {
             Item selectedItem = itemsList.get(position);
             Intent intent = new Intent(ListActivity.this, PreviewItemActivity.class);
             intent.putExtra(EXTRA_SELECTED_ITEM_ID, selectedItem.getId());
-            startActivity(intent);
+            previewLauncher.launch(intent);
         });
 
         itemListAdapter.setOnItemQuantityChangeListener((itemId, newQuantity) -> {
@@ -205,7 +225,6 @@ public class ListActivity extends AppCompatActivity {
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
                 return false;
             }
-
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
@@ -217,11 +236,9 @@ public class ListActivity extends AppCompatActivity {
                 }
                 stopJiggleAnimation(viewHolder.itemView);
             }
-
             @Override
             public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-
                 View itemView = viewHolder.itemView;
                 if (viewHolder instanceof ItemListAdapter.ItemViewHolder) {
                     if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
@@ -240,17 +257,14 @@ public class ListActivity extends AppCompatActivity {
                         currentJiggleView = null;
                     }
                 }
-
                 if (deleteIcon == null) {
                     deleteIcon = ContextCompat.getDrawable(ListActivity.this, R.drawable.outline_delete_24);
                 }
-
                 int iconLeft, iconRight;
                 int iconTop = itemView.getTop() + (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
                 int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
                 int iconWidth = deleteIcon.getIntrinsicWidth();
                 int iconMargin = (itemView.getHeight() - iconWidth) / 2;
-
                 if (dX < 0) {
                     float swipeProgress = Math.min(1f, Math.abs(dX) / (float)itemView.getWidth());
                     iconRight = (int) (recyclerView.getWidth() + iconWidth - (iconWidth + iconMargin) * swipeProgress);
@@ -264,7 +278,6 @@ public class ListActivity extends AppCompatActivity {
                     iconLeft = 0;
                     iconRight = 0;
                 }
-
                 if (deleteIcon != null && dX != 0) {
                     deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
                     deleteIcon.draw(c);
@@ -293,7 +306,6 @@ public class ListActivity extends AppCompatActivity {
                 currentJiggleAnimator = null;
             }
         };
-
         new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(binding.rvList);
     }
 
@@ -312,7 +324,6 @@ public class ListActivity extends AppCompatActivity {
                     dbHelper.updateTodoItem(todoItem);
                 }
             }
-
             @Override
             public void onTodoItemNameChanged(int position, String newName) {
                 if (position != RecyclerView.NO_POSITION && position < todoList.size()) {
@@ -321,12 +332,10 @@ public class ListActivity extends AppCompatActivity {
                     dbHelper.updateTodoItem(todoItem);
                 }
             }
-
             @Override
             public void onTodoItemDeleted(int itemId) {
                 dbHelper.deleteTodoItem(itemId);
                 loadTodoItems();
-                Log.d("ListActivity", "Todo item with ID: " + itemId + " permanently deleted from DB. Reloading todo list.");
             }
         });
     }
@@ -385,7 +394,6 @@ public class ListActivity extends AppCompatActivity {
                 .addTransition(new Slide(Gravity.TOP).addTarget(binding.cvShoplist))
                 .setDuration(350)
                 .addTransition(new AutoTransition().addTarget(binding.cv)));
-
         isTodoVisible = !isTodoVisible;
         if (isTodoVisible) {
             binding.cvShoplist.setVisibility(View.VISIBLE);
@@ -395,11 +403,9 @@ public class ListActivity extends AppCompatActivity {
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) binding.cv.getLayoutParams();
             params.topToBottom = binding.cvShoplist.getId();
             binding.cv.setLayoutParams(params);
-
             ObjectAnimator animator = ObjectAnimator.ofFloat(binding.cv, "translationY", -92f);
             animator.setDuration(350);
             animator.start();
-
         } else {
             binding.cvShoplist.setVisibility(View.GONE);
             TransitionManager.beginDelayedTransition(binding.getRoot(), new TransitionSet()
@@ -408,7 +414,6 @@ public class ListActivity extends AppCompatActivity {
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) binding.cv.getLayoutParams();
             params.topToBottom = binding.constraintLayout3.getId();
             binding.cv.setLayoutParams(params);
-
             ObjectAnimator animator = ObjectAnimator.ofFloat(binding.cv, "translationY", 0f);
             animator.setDuration(350);
             animator.start();
@@ -443,7 +448,6 @@ public class ListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadItems();
         loadTodoItems();
     }
 
