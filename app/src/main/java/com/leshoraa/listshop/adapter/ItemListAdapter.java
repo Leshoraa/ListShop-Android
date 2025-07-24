@@ -14,13 +14,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.animation.ObjectAnimator;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-
 import com.google.android.material.snackbar.Snackbar;
 import com.leshoraa.listshop.R;
 import com.leshoraa.listshop.databinding.ListItem1Binding;
 import com.leshoraa.listshop.model.Item;
 import com.leshoraa.listshop.model.DatabaseHelper;
-
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -99,7 +97,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         if (holder.quantityTextWatcher != null) {
             holder.binding.edtQuantity.removeTextChangedListener(holder.quantityTextWatcher);
         }
-        holder.quantityTextWatcher = new QuantityTextWatcher(holder, item, dbHelper, onItemQuantityChangeListener);
+        holder.quantityTextWatcher = new QuantityTextWatcher(holder, item, dbHelper, onItemQuantityChangeListener, decimalFormat);
         holder.binding.edtQuantity.addTextChangedListener(holder.quantityTextWatcher);
 
         holder.binding.tvReducequantity.setOnClickListener(v -> {
@@ -235,7 +233,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                     }
                 });
                 animator.start();
-            } else { // View.VISIBLE
+            } else {
                 binding.deleteItem.setVisibility(View.VISIBLE);
                 ObjectAnimator animator = ObjectAnimator.ofFloat(binding.deleteItem, "translationX", binding.deleteItem.getWidth(), 0f);
                 animator.setDuration(200);
@@ -245,16 +243,18 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
     }
 
     private static class QuantityTextWatcher implements TextWatcher {
-        private ItemViewHolder holder;
-        private Item item;
-        private DatabaseHelper dbHelper;
-        private OnItemQuantityChangeListener listener;
+        private final ItemViewHolder holder;
+        private final Item item;
+        private final DatabaseHelper dbHelper;
+        private final OnItemQuantityChangeListener listener;
+        private final DecimalFormat decimalFormat;
 
-        private QuantityTextWatcher(ItemViewHolder holder, Item item, DatabaseHelper dbHelper, OnItemQuantityChangeListener listener) {
+        private QuantityTextWatcher(ItemViewHolder holder, Item item, DatabaseHelper dbHelper, OnItemQuantityChangeListener listener, DecimalFormat decimalFormat) {
             this.holder = holder;
             this.item = item;
             this.dbHelper = dbHelper;
             this.listener = listener;
+            this.decimalFormat = decimalFormat;
         }
 
         @Override
@@ -277,7 +277,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                 newQuantity = 1;
                 if (!quantityString.equals("1")) {
                     holder.binding.edtQuantity.setText("1");
-                    holder.binding.edtQuantity.setSelection("1".length());
+                    holder.binding.edtQuantity.setSelection(1);
                 }
             } else if (quantityString.isEmpty()) {
                 newQuantity = 0;
@@ -286,10 +286,12 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
             if (item.getCount() != newQuantity) {
                 item.setCount(newQuantity);
 
-                item.setFinalPrice(item.getPrice() * newQuantity);
+                double newFinalPrice = item.getPrice() * newQuantity;
+                item.setFinalPrice(newFinalPrice);
+
+                holder.binding.tvListPrice.setText(decimalFormat.format(newFinalPrice));
 
                 dbHelper.updateItemQuantity(item.getId(), newQuantity);
-
                 if (listener != null) {
                     listener.onQuantityChanged(item.getId(), newQuantity);
                 }
