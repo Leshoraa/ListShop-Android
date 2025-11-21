@@ -93,8 +93,12 @@ public class PreviewItemActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+            Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right,
+                    Math.max(systemBars.bottom, imeInsets.bottom));
+
+            return WindowInsetsCompat.CONSUMED;
         });
 
         discounts = new ArrayList<>();
