@@ -12,7 +12,7 @@
         android:paddingVertical="8dp"
         android:layout_marginHorizontal="4dp"
         android:layout_marginVertical="8dp"
-        app:cardBackgroundColor="#8AF1F1F1"
+        app:cardBackgroundColor="@color/colorOnCard"
         app:cardCornerRadius="12dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -29,7 +29,7 @@
                 android:layout_width="54dp"
                 android:layout_height="54dp"
                 android:layout_marginTop="24dp"
-                app:cardBackgroundColor="#8AD6D6D6"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -42,8 +42,8 @@
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:text="+"
-                    android:textColor="@color/colorOnBackground"
-                    android:textSize="24dp"/>
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="28dp"/>
             </androidx.cardview.widget.CardView>
 
             <TextView
@@ -54,7 +54,7 @@
                 android:maxLines="1"
                 android:text="Items"
                 android:fontFamily="@font/ttchocolatesmedium"
-                android:textColor="@color/colorOnBackground"
+                android:textColor="@color/colorTextPrimary"
                 android:textSize="18sp"
                 android:layout_marginHorizontal="6dp"
                 app:layout_constraintBottom_toBottomOf="parent"

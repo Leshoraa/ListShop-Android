@@ -10,7 +10,7 @@
         android:id="@+id/add_itemDiscount"
         android:layout_width="match_parent"
         android:layout_height="36dp"
-        app:cardBackgroundColor="#A8AFFBEB"
+        app:cardBackgroundColor="@color/colorPrimary"
         app:cardCornerRadius="100dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -27,7 +27,7 @@
             android:gravity="center"
             android:text="  +  "
             android:textAlignment="center"
-            android:textColor="#444444"
+            android:textColor="@color/colorOnCard"
             android:textSize="24sp"
             app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.cardview.widget.CardView>

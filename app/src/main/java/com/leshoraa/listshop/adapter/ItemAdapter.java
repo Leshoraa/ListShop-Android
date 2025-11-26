@@ -340,9 +340,13 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.tvTitleItems.setText(item.getName());
 
                 if (isSelectionModeActive && selectedItems.contains(item)) {
-                    binding.cvMainList.setCardBackgroundColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorPrimaryVariant));
+                    binding.cvMainList.setCardBackgroundColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorPrimary));
+                    binding.tvTitleItems.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorTextSecondary));
+                    binding.tvMainItemsCount.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorTextSecondary));
                 } else {
                     binding.cvMainList.setCardBackgroundColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorOnCard));
+                    binding.tvTitleItems.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorTextPrimary));
+                    binding.tvMainItemsCount.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(), R.color.colorTextPrimary));
                 }
             }
         }

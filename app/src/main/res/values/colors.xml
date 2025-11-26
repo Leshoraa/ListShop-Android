@@ -5,18 +5,20 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- App Color Scheme -->
-    <color name="colorPrimary">#CFEDDB</color>
+    <color name="colorPrimary">#2d3847</color>
     <color name="colorSecPrimary">#B5D4C1</color>
-    <color name="colorTextPrimary">#A4C4B0</color>
+    <color name="colorTextPrimary">#2D2D2D</color>
+    <color name="colorTextSecondary">#F0F0F0</color>
+    <color name="transparent">#00FFFFFF</color>
     <color name="colorPrimaryVariant">#D4F4E1</color>
     <color name="colorSecondary">#F0F0F0</color>
-    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorBackground">#f6f6f6</color>
     <color name="colorSurface">#FBFFE4</color>
     <color name="warning">#C9303B</color>
 
     <!-- Text/Icon on Top of Backgrounds -->
     <color name="colorOnPrimary">#FFFFFFFF</color>
-    <color name="colorOnCard">#8AF1F1F1</color>
+    <color name="colorOnCard">#ffffff</color>
     <color name="colorOnBackground">#2D2D2D</color>
     <color name="colorOnSurface">#515050</color>
 </resources>

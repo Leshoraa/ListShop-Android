@@ -34,8 +34,12 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
 
     public void releaseCamera() {
         if (camera != null) {
-            camera.stopPreview();
-            camera.release();
+            try {
+                camera.stopPreview();
+                camera.release();
+            } catch (Exception e) {
+                // Ignore errors during release
+            }
             camera = null;
         }
     }
@@ -47,14 +51,27 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-        if (camera != null) {
+        if (camera == null) return; // Guard clause: if camera isn't open, don't touch it
+
+        try {
             camera.stopPreview();
-            try {
-                camera.setPreviewDisplay(holder);
-                camera.startPreview();
-            } catch (IOException e) {
-                e.printStackTrace();
+        } catch (Exception e) {
+        }
+
+        try {
+            Camera.Parameters parameters = camera.getParameters();
+            if (parameters != null) {
+                Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 3.0);
+                if (optimalSize != null) {
+                    parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+                }
+                camera.setParameters(parameters);
             }
+
+            camera.setPreviewDisplay(holder);
+            camera.startPreview();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -66,13 +83,30 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     private void openCamera(SurfaceHolder holder) {
         try {
             if (camera != null) releaseCamera();
-            camera = Camera.open();
+
+            camera = Camera.open(); // Open default back camera
+
+            if (camera == null) {
+                Toast.makeText(activity, "Failed to open camera", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             Camera.Parameters parameters = camera.getParameters();
+
+            if (parameters == null) {
+                return;
+            }
 
             Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 3.0);
             if (optimalSize != null) {
                 parameters.setPreviewSize(optimalSize.width, optimalSize.height);
             }
+
+            List<String> focusModes = parameters.getSupportedFocusModes();
+            if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            }
+
             camera.setParameters(parameters);
 
             setCameraDisplayOrientation(activity, Camera.CameraInfo.CAMERA_FACING_BACK, camera);
@@ -82,13 +116,18 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
             adjustAspectRatio(4f/3f);
 
         } catch (Exception e) {
-            Toast.makeText(activity, "Camera Preview Error", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+            releaseCamera(); // Clean up if opening failed
+            Toast.makeText(activity, "Camera Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void adjustAspectRatio(float targetRatio) {
         int parentWidth = surfaceView.getWidth();
         int parentHeight = surfaceView.getHeight();
+
+        if (parentWidth == 0 || parentHeight == 0) return;
+
         int newWidth, newHeight;
 
         if ((float) parentWidth / parentHeight > targetRatio) {
@@ -127,6 +166,8 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     }
 
     private android.hardware.Camera.Size getOptimalPreviewSize(List<android.hardware.Camera.Size> sizes, double targetRatio) {
+        if (sizes == null) return null; // Null check
+
         final double ASPECT_TOLERANCE = 0.1;
         android.hardware.Camera.Size optimalSize = null;
         double minDiff = Double.MAX_VALUE;

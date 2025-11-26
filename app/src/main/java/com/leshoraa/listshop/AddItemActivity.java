@@ -97,6 +97,15 @@ public class AddItemActivity extends AppCompatActivity {
         cameraPreviewManager = new CameraPreviewManager(this, binding.cameraPreview);
 
         setupListeners();
+        checkPermissionAndStartCamera();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (allPermissionsGranted()) {
+            cameraPreviewManager.startCamera();
+        }
     }
 
     private void setupUI() {
@@ -179,7 +188,7 @@ public class AddItemActivity extends AppCompatActivity {
     private void setupListeners() {
         binding.cameraPreview.setOnClickListener(v -> checkPermissionAndTakePhoto());
         binding.imageViewCaptured.setOnClickListener(v -> checkPermissionAndTakePhoto());
-        binding.back.setOnClickListener(v -> onBackPressed());
+        binding.back.setOnClickListener(v -> finish());
         binding.btnSaveItem.setOnClickListener(v -> addItemToDatabase());
 
         binding.tvReducequantity.setOnClickListener(v -> {
@@ -207,11 +216,40 @@ public class AddItemActivity extends AppCompatActivity {
         setupAiSwitch();
     }
 
+    private void checkPermissionAndStartCamera() {
+        if (allPermissionsGranted()) {
+            cameraPreviewManager.startCamera();
+        } else {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
+    }
+
     private void checkPermissionAndTakePhoto() {
         if (allPermissionsGranted()) {
             dispatchTakePictureIntent();
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
+    }
+
+    private boolean allPermissionsGranted() {
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                cameraPreviewManager.startCamera();
+            } else {
+                Toast.makeText(this, "Camera permission required.", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -322,6 +360,7 @@ public class AddItemActivity extends AppCompatActivity {
         GridLayoutManager layoutManager = new GridLayoutManager(this, numberOfDiscountColumns);
         binding.rvEdtDiscount.setLayoutManager(layoutManager);
         binding.rvEdtDiscount.setAdapter(discountAdapter);
+
         discountAdapter.setOnEditTextChangeListener((position, text) -> {
             if (position >= 0 && position < discountItems.size()) {
                 discountItems.set(position, text);
@@ -329,17 +368,20 @@ public class AddItemActivity extends AppCompatActivity {
                 handler.postDelayed(enforceMaxDiscountRunnable, 500);
             }
         });
+
         discountAdapter.setOnItemDeleteListener(position -> {
             if (position != RecyclerView.NO_POSITION && position < discountItems.size()) {
-                discountItems.remove(position);
-                discountAdapter.notifyItemRemoved(position);
-                if (discountItems.isEmpty()) {
-                    discountItems.add("");
-                    discountAdapter.notifyItemInserted(0);
+                if (discountItems.size() == 1) {
+                    discountItems.set(position, "");
+                    discountAdapter.notifyItemChanged(position);
+                } else {
+                    discountItems.remove(position);
+                    discountAdapter.notifyDataSetChanged();
                 }
                 binding.rvEdtDiscount.post(this::enforceMaxDiscount);
             }
         });
+
         discountAdapter.setOnAddButtonClickListener(() -> {
             if (!discountItems.isEmpty()) {
                 String lastItemValue = discountItems.get(discountItems.size() - 1);
@@ -349,7 +391,7 @@ public class AddItemActivity extends AppCompatActivity {
                 }
             }
             discountItems.add("");
-            discountAdapter.notifyItemInserted(discountItems.size() - 1);
+            discountAdapter.notifyDataSetChanged();
             binding.rvEdtDiscount.scrollToPosition(discountItems.size() - 1);
             binding.rvEdtDiscount.post(this::enforceMaxDiscount);
         });
@@ -479,15 +521,6 @@ public class AddItemActivity extends AppCompatActivity {
         });
     }
 
-    private boolean allPermissionsGranted() {
-        for (String permission : REQUIRED_PERMISSIONS) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -495,17 +528,5 @@ public class AddItemActivity extends AppCompatActivity {
             cameraPreviewManager.releaseCamera();
         }
         dbHelper.close();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                cameraPreviewManager.startCamera();
-            } else {
-                Toast.makeText(this, "Camera permissions not granted.", Toast.LENGTH_LONG).show();
-            }
-        }
     }
 }

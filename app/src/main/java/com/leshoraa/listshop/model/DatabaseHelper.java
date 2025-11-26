@@ -69,6 +69,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_ITEM_LIST);
         db.execSQL(CREATE_TABLE_TODO_LIST);
         db.execSQL(CREATE_TABLE_SETTINGS);
+
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_item_parent ON " + TABLE_ITEM_LIST + "(" + COLUMN_ITEM_LIST_PARENT_LIST_ID + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_todo_parent ON " + TABLE_TODO_LIST + "(" + COLUMN_TODO_PARENT_LIST_ID + ")");
     }
 
     @Override
@@ -174,7 +177,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<Item> getMarkets() {
         List<Item> marketList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM " + TABLE_MARKETS + " ORDER BY " + COLUMN_MARKET_DATE + " DESC, " + COLUMN_MARKET_ORDER + " ASC";
+        String selectQuery = "SELECT * FROM " + TABLE_MARKETS + " ORDER BY " + COLUMN_MARKET_ID + " DESC";
+
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
         if (cursor.moveToFirst()) {
@@ -297,7 +301,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            cursor = db.query(TABLE_ITEM_LIST, null, COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?", new String[]{String.valueOf(parentListId)}, null, null, COLUMN_ITEM_LIST_ORDER + " ASC", null);
+            cursor = db.query(TABLE_ITEM_LIST, null, COLUMN_ITEM_LIST_PARENT_LIST_ID + " = ?", new String[]{String.valueOf(parentListId)}, null, null, COLUMN_ITEM_LIST_INTERNAL_ID + " DESC", null);
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ITEM_LIST_INTERNAL_ID));
@@ -363,7 +367,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ITEM_LIST_FINAL_PRICE, item.getFinalPrice());
         values.put(COLUMN_ITEM_LIST_TOTAL_DISCOUNT_PERCENTAGE, item.getTotalDiscountPercentage());
         values.put(COLUMN_ITEM_LIST_ORDER, item.getOrder());
-        int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?", new String[]{String.valueOf(item.getId())});
+
+        values.put(COLUMN_ITEM_LIST_PARENT_LIST_ID, item.getParentListId());
+
+        int rowsAffected = db.update(TABLE_ITEM_LIST, values,
+                COLUMN_ITEM_LIST_INTERNAL_ID + " = ?",
+                new String[]{String.valueOf(item.getId())});
+
         db.close();
         return rowsAffected;
     }

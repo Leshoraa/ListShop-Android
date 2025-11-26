@@ -52,7 +52,7 @@
                         android:gravity="center_vertical"
                         android:paddingStart="16dp"
                         android:text="Shopping list"
-                        android:textColor="@color/black"
+                        android:textColor="@color/colorTextSecondary"
                         android:textSize="16sp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
@@ -67,7 +67,8 @@
                         android:visibility="visible"
                         app:layout_constraintStart_toEndOf="@+id/title_shoplist"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:tint="@color/colorTextSecondary" >
 
                         <TextView
                             android:id="@+id/tv_shoplist_count"
@@ -75,7 +76,7 @@
                             android:layout_height="match_parent"
                             android:gravity="center"
                             android:text="0"
-                            android:textColor="@color/black"
+                            android:textColor="@color/colorTextSecondary"
                             android:textSize="10sp"
                             android:fontFamily="@font/ttchocolatesmedium"
                             tools:text="99" />
@@ -89,7 +90,7 @@
                         android:gravity="center_vertical"
                         android:paddingEnd="16dp"
                         android:text="•••"
-                        android:textColor="@color/black"
+                        android:textColor="@color/colorTextSecondary"
                         android:textSize="16sp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
@@ -155,10 +156,9 @@
         android:id="@+id/cv"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="24dp"
-        android:backgroundTint="#00FFFFFF"
-        app:cardBackgroundColor="@color/colorBackground"
+        app:cardBackgroundColor="@color/colorOnCard"
         app:cardCornerRadius="16dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="@id/cv_bt"
@@ -170,7 +170,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:background="@color/colorBackground"
             android:paddingBottom="36dp"
             android:scrollbarSize="0dp"
             android:scrollbars="vertical" />
@@ -181,32 +180,43 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:background="@color/colorOnPrimary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
+        <androidx.cardview.widget.CardView
             android:id="@+id/back"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:padding="16dp"
-            android:src="@drawable/baseline_arrow_back_ios_new_24"
+            app:cardBackgroundColor="@color/colorOnCard"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/black" />
+            app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/todo"
-            android:layout_width="48dp"
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="16dp"
+                android:src="@drawable/baseline_arrow_back_ios_new_24"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/colorPrimary" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
             android:layout_height="48dp"
-            android:padding="16dp"
-            android:src="@drawable/baseline_pencil_24"
+            app:cardBackgroundColor="@color/colorOnCard"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            android:layout_marginStart="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/colorOnSurface" />
+            app:layout_constraintStart_toEndOf="@+id/back"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <EditText
             android:id="@+id/market_name"
@@ -225,6 +235,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/todo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="16dp"
+            android:src="@drawable/baseline_pencil_24"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/colorPrimary" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.cardview.widget.CardView
@@ -233,9 +254,9 @@
         android:layout_height="wrap_content"
         android:backgroundTint="@color/colorOnPrimary"
         app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
+        app:cardElevation="8dp"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginVertical="6dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -243,13 +264,13 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/cl_bottom"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingHorizontal="16dp">
 
             <TextView
                 android:id="@+id/tv_listTotal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
                 android:fontFamily="@font/poppinsregular"
                 android:gravity="center"
                 android:text="Total :"
@@ -276,7 +297,7 @@
                 android:id="@+id/btn_addItem"
                 android:layout_width="102dp"
                 android:layout_height="40dp"
-                app:cardBackgroundColor="#D5F2E1"
+                app:cardBackgroundColor="@color/colorPrimary"
                 app:cardCornerRadius="100dp"
                 app:cardElevation="0dp"
                 android:layout_marginVertical="16dp"
@@ -291,7 +312,7 @@
                     android:gravity="center"
                     android:textSize="12sp"
                     android:fontFamily="@font/comfortaabold"
-                    android:textColor="@color/black"
+                    android:textColor="@color/colorTextSecondary"
                     android:text="Add Item"/>
             </androidx.cardview.widget.CardView>
 

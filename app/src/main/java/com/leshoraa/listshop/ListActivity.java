@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -18,7 +20,6 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.PopupMenu;
 import android.widget.Toast;
-import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -49,6 +50,8 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ListActivity extends AppCompatActivity {
 
@@ -65,6 +68,9 @@ public class ListActivity extends AppCompatActivity {
     private boolean isTodoVisible = false;
     private ActivityResultLauncher<Intent> previewLauncher;
     private ActivityResultLauncher<Intent> addItemLauncher;
+
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,36 +105,8 @@ public class ListActivity extends AppCompatActivity {
         symbols.setDecimalSeparator(',');
         decimalFormat = new DecimalFormat("#,##0", symbols);
 
-        Window window = getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.setStatusBarColor(Color.WHITE);
-        window.setNavigationBarColor(Color.WHITE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            window.getDecorView().setSystemUiVisibility(
-                    window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            );
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (window.getDecorView().getWindowInsetsController() != null) {
-                window.getDecorView().getWindowInsetsController().setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                );
-                window.getDecorView().getWindowInsetsController().setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                );
-            }
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        setupWindow();
+        setupInsets();
 
         currentParentListId = -1;
         if (getIntent() != null && getIntent().hasExtra(MainActivity.EXTRA_ITEM_ID)) {
@@ -146,9 +124,34 @@ public class ListActivity extends AppCompatActivity {
 
         setupRecyclerView();
         setupTodoRecyclerView();
+
         loadItems();
         loadTodoItems();
 
+        setupListeners();
+    }
+
+    private void setupWindow() {
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.setStatusBarColor(Color.WHITE);
+        window.setNavigationBarColor(Color.WHITE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+    }
+
+    private void setupInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+    }
+
+    private void setupListeners() {
         binding.marketName.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -157,8 +160,7 @@ public class ListActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 if (currentParentListId != -1) {
-                    String newMarketName = s.toString().trim();
-                    dbHelper.updateMarketName(currentParentListId, newMarketName);
+                    executorService.execute(() -> dbHelper.updateMarketName(currentParentListId, s.toString().trim()));
                 }
             }
         });
@@ -185,37 +187,80 @@ public class ListActivity extends AppCompatActivity {
     }
 
     private void loadMarketName(int marketId) {
-        Item market = dbHelper.getMarketById(marketId);
-        if (market != null) {
-            binding.marketName.setText(market.getName());
-            binding.marketName.setSelection(binding.marketName.getText().length());
-        } else {
-            binding.marketName.setText("My Cart");
-        }
+        executorService.execute(() -> {
+            Item market = dbHelper.getMarketById(marketId);
+            mainHandler.post(() -> {
+                if (market != null) {
+                    binding.marketName.setText(market.getName());
+                    binding.marketName.setSelection(binding.marketName.getText().length());
+                } else {
+                    binding.marketName.setText("My Cart");
+                }
+            });
+        });
+    }
+
+    private void loadItems() {
+        if (currentParentListId == -1) return;
+
+        executorService.execute(() -> {
+            List<Item> newData = dbHelper.getItemsByParentListId(currentParentListId);
+            mainHandler.post(() -> {
+                itemsList.clear();
+                itemsList.addAll(newData);
+                itemListAdapter.notifyDataSetChanged();
+                updateTotalPrice();
+            });
+        });
+    }
+
+    private void loadTodoItems() {
+        if (currentParentListId == -1) return;
+
+        executorService.execute(() -> {
+            List<Item> newTodos = dbHelper.getTodoItemsByParentListId(currentParentListId);
+            mainHandler.post(() -> {
+                todoList.clear();
+                todoList.addAll(newTodos);
+                shopListAdapter.notifyDataSetChanged();
+                updateShopListCount();
+            });
+        });
     }
 
     private void setupRecyclerView() {
         itemsList = new ArrayList<>();
         itemListAdapter = new ItemListAdapter(this, itemsList);
+
+        binding.rvList.setHasFixedSize(true);
+        binding.rvList.setItemViewCacheSize(20);
         binding.rvList.setLayoutManager(new LinearLayoutManager(this));
         binding.rvList.setAdapter(itemListAdapter);
 
         itemListAdapter.setOnItemDeleteListener(itemId -> {
-            dbHelper.deleteItem(itemId);
-            loadItems();
+            executorService.execute(() -> {
+                dbHelper.deleteItem(itemId);
+                loadItems();
+            });
         });
 
         itemListAdapter.setOnItemClickListener(position -> {
-            Item selectedItem = itemsList.get(position);
-            Intent intent = new Intent(ListActivity.this, PreviewItemActivity.class);
-            intent.putExtra(EXTRA_SELECTED_ITEM_ID, selectedItem.getId());
-            previewLauncher.launch(intent);
+            if(position < itemsList.size()) {
+                Item selectedItem = itemsList.get(position);
+                Intent intent = new Intent(ListActivity.this, PreviewItemActivity.class);
+                intent.putExtra(EXTRA_SELECTED_ITEM_ID, selectedItem.getId());
+                previewLauncher.launch(intent);
+            }
         });
 
         itemListAdapter.setOnItemQuantityChangeListener((itemId, newQuantity) -> {
             updateTotalPrice();
         });
 
+        setupSwipeToDelete();
+    }
+
+    private void setupSwipeToDelete() {
         ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             private Drawable deleteIcon;
             private ObjectAnimator currentJiggleAnimator;
@@ -229,67 +274,61 @@ public class ListActivity extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
+                    Item item = itemsList.get(position);
+
                     if (viewHolder instanceof ItemListAdapter.ItemViewHolder) {
                         ((ItemListAdapter.ItemViewHolder) viewHolder).setDeleteItemVisibility(View.GONE);
                     }
                     itemListAdapter.removeItem(position);
+
+                    executorService.execute(() -> dbHelper.deleteItem(item.getId()));
                 }
                 stopJiggleAnimation(viewHolder.itemView);
             }
+
             @Override
             public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                 View itemView = viewHolder.itemView;
-                if (viewHolder instanceof ItemListAdapter.ItemViewHolder) {
-                    if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                        if (isCurrentlyActive) {
-                            if (currentJiggleView != itemView || currentJiggleAnimator == null || !currentJiggleAnimator.isRunning()) {
-                                stopJiggleAnimation(currentJiggleView);
-                                startJiggleAnimation(itemView);
-                                currentJiggleView = itemView;
-                            }
-                        } else if (dX == 0) {
-                            stopJiggleAnimation(itemView);
-                            currentJiggleView = null;
+
+                if (deleteIcon == null) deleteIcon = ContextCompat.getDrawable(ListActivity.this, R.drawable.outline_delete_24);
+
+                int iconMargin = (itemView.getHeight() - deleteIcon.getIntrinsicWidth()) / 2;
+                int iconTop = itemView.getTop() + (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
+                int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
+
+                if (dX > 0) {
+                    int iconLeft = itemView.getLeft() + iconMargin;
+                    int iconRight = iconLeft + deleteIcon.getIntrinsicWidth();
+                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                } else if (dX < 0) {
+                    int iconRight = itemView.getRight() - iconMargin;
+                    int iconLeft = iconRight - deleteIcon.getIntrinsicWidth();
+                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                }
+
+                if (dX != 0) {
+                    deleteIcon.setAlpha(255);
+                    deleteIcon.draw(c);
+                }
+
+                if (viewHolder instanceof ItemListAdapter.ItemViewHolder && actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    if (isCurrentlyActive) {
+                        if (currentJiggleView != itemView) {
+                            stopJiggleAnimation(currentJiggleView);
+                            startJiggleAnimation(itemView);
+                            currentJiggleView = itemView;
                         }
-                    } else {
+                    } else if (dX == 0) {
                         stopJiggleAnimation(itemView);
                         currentJiggleView = null;
                     }
                 }
-                if (deleteIcon == null) {
-                    deleteIcon = ContextCompat.getDrawable(ListActivity.this, R.drawable.outline_delete_24);
-                }
-                int iconLeft, iconRight;
-                int iconTop = itemView.getTop() + (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
-                int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
-                int iconWidth = deleteIcon.getIntrinsicWidth();
-                int iconMargin = (itemView.getHeight() - iconWidth) / 2;
-                if (dX < 0) {
-                    float swipeProgress = Math.min(1f, Math.abs(dX) / (float)itemView.getWidth());
-                    iconRight = (int) (recyclerView.getWidth() + iconWidth - (iconWidth + iconMargin) * swipeProgress);
-                    iconLeft = iconRight - iconWidth;
-                } else if (dX > 0) {
-                    float swipeProgress = Math.min(1f, Math.abs(dX) / (float)itemView.getWidth());
-                    iconLeft = (int) (-iconWidth + (iconWidth + iconMargin) * swipeProgress);
-                    iconRight = iconLeft + iconWidth;
-                } else {
-                    deleteIcon.setAlpha(0);
-                    iconLeft = 0;
-                    iconRight = 0;
-                }
-                if (deleteIcon != null && dX != 0) {
-                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                    deleteIcon.draw(c);
-                    deleteIcon.setAlpha(255);
-                }
             }
 
             private void startJiggleAnimation(View view) {
-                if (currentJiggleAnimator != null) {
-                    currentJiggleAnimator.cancel();
-                }
-                currentJiggleAnimator = ObjectAnimator.ofFloat(view, "rotation", -5f, 5f);
+                if (currentJiggleAnimator != null) currentJiggleAnimator.cancel();
+                currentJiggleAnimator = ObjectAnimator.ofFloat(view, "rotation", -2f, 2f);
                 currentJiggleAnimator.setDuration(150);
                 currentJiggleAnimator.setRepeatCount(ObjectAnimator.INFINITE);
                 currentJiggleAnimator.setRepeatMode(ObjectAnimator.REVERSE);
@@ -299,11 +338,9 @@ public class ListActivity extends AppCompatActivity {
             private void stopJiggleAnimation(View view) {
                 if (currentJiggleAnimator != null) {
                     currentJiggleAnimator.cancel();
-                    if (view != null) {
-                        view.setRotation(0f);
-                    }
+                    currentJiggleAnimator = null;
                 }
-                currentJiggleAnimator = null;
+                if (view != null) view.setRotation(0f);
             }
         };
         new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(binding.rvList);
@@ -312,50 +349,35 @@ public class ListActivity extends AppCompatActivity {
     private void setupTodoRecyclerView() {
         todoList = new ArrayList<>();
         shopListAdapter = new ShopListAdapter(this, todoList);
+        binding.rvTodo.setHasFixedSize(true);
         binding.rvTodo.setLayoutManager(new LinearLayoutManager(this));
         binding.rvTodo.setAdapter(shopListAdapter);
 
         shopListAdapter.setOnTodoItemActionListener(new ShopListAdapter.OnTodoItemActionListener() {
             @Override
             public void onTodoItemChecked(int position, boolean isChecked) {
-                if (position != RecyclerView.NO_POSITION && position < todoList.size()) {
+                if (position < todoList.size()) {
                     Item todoItem = todoList.get(position);
                     todoItem.setAddButton(isChecked);
-                    dbHelper.updateTodoItem(todoItem);
+                    executorService.execute(() -> dbHelper.updateTodoItem(todoItem));
                 }
             }
             @Override
             public void onTodoItemNameChanged(int position, String newName) {
-                if (position != RecyclerView.NO_POSITION && position < todoList.size()) {
+                if (position < todoList.size()) {
                     Item todoItem = todoList.get(position);
                     todoItem.setName(newName);
-                    dbHelper.updateTodoItem(todoItem);
+                    executorService.execute(() -> dbHelper.updateTodoItem(todoItem));
                 }
             }
             @Override
             public void onTodoItemDeleted(int itemId) {
-                dbHelper.deleteTodoItem(itemId);
-                loadTodoItems();
+                executorService.execute(() -> {
+                    dbHelper.deleteTodoItem(itemId);
+                    loadTodoItems();
+                });
             }
         });
-    }
-
-    private void loadItems() {
-        if (currentParentListId != -1) {
-            itemsList.clear();
-            itemsList.addAll(dbHelper.getItemsByParentListId(currentParentListId));
-            itemListAdapter.notifyDataSetChanged();
-            updateTotalPrice();
-        }
-    }
-
-    private void loadTodoItems() {
-        if (currentParentListId != -1) {
-            todoList.clear();
-            todoList.addAll(dbHelper.getTodoItemsByParentListId(currentParentListId));
-            shopListAdapter.notifyDataSetChanged();
-            updateShopListCount();
-        }
     }
 
     private void updateTotalPrice() {
@@ -371,22 +393,26 @@ public class ListActivity extends AppCompatActivity {
         if (!todoName.isEmpty()) {
             Item newTodoItem = new Item(0, todoName, 0, false, null);
             newTodoItem.setParentListId(currentParentListId);
-            long newTodoId = dbHelper.addTodoItem(newTodoItem);
-            if (newTodoId != -1) {
-                newTodoItem.setId((int) newTodoId);
-                loadTodoItems();
-                binding.edtTodo.setText("");
-            } else {
-                Toast.makeText(ListActivity.this, "Failed to add todo item.", Toast.LENGTH_SHORT).show();
-            }
+
+            executorService.execute(() -> {
+                long newTodoId = dbHelper.addTodoItem(newTodoItem);
+                mainHandler.post(() -> {
+                    if (newTodoId != -1) {
+                        newTodoItem.setId((int) newTodoId);
+                        loadTodoItems();
+                        binding.edtTodo.setText("");
+                    } else {
+                        Toast.makeText(ListActivity.this, "Failed to add todo item.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
         } else {
             Toast.makeText(ListActivity.this, "Todo item name cannot be empty.", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void updateShopListCount() {
-        int count = todoList.size();
-        binding.tvShoplistCount.setText(String.valueOf(count));
+        binding.tvShoplistCount.setText(String.valueOf(todoList.size()));
     }
 
     private void toggleTodoVisibility() {
@@ -435,13 +461,17 @@ public class ListActivity extends AppCompatActivity {
 
     private void deleteAllTodoItems() {
         if (currentParentListId != -1) {
-            List<Item> itemsToDelete = dbHelper.getTodoItemsByParentListId(currentParentListId);
-            for (Item todoItem : itemsToDelete) {
-                dbHelper.deleteTodoItem(todoItem.getId());
-            }
-            todoList.clear();
-            shopListAdapter.notifyDataSetChanged();
-            updateShopListCount();
+            executorService.execute(() -> {
+                List<Item> itemsToDelete = dbHelper.getTodoItemsByParentListId(currentParentListId);
+                for (Item todoItem : itemsToDelete) {
+                    dbHelper.deleteTodoItem(todoItem.getId());
+                }
+                mainHandler.post(() -> {
+                    todoList.clear();
+                    shopListAdapter.notifyDataSetChanged();
+                    updateShopListCount();
+                });
+            });
         }
     }
 
@@ -455,5 +485,6 @@ public class ListActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         dbHelper.close();
+        executorService.shutdown();
     }
 }
