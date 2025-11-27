@@ -378,15 +378,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rowsAffected;
     }
 
-    public int updateItemOrder(int itemId, int newOrder) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_ITEM_LIST_ORDER, newOrder);
-        int rowsAffected = db.update(TABLE_ITEM_LIST, values, COLUMN_ITEM_LIST_INTERNAL_ID + " = ?", new String[]{String.valueOf(itemId)});
-        db.close();
-        return rowsAffected;
-    }
-
     public long addTodoItem(Item todoItem) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();

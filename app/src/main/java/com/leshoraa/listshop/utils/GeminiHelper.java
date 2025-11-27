@@ -20,7 +20,7 @@ public class GeminiHelper {
 
     private final String apiKey;
     private final OkHttpClient client;
-    private final List<String> GEMINI_MODELS = Arrays.asList("gemini-2.5-flash", "gemini-2.5-pro");
+    private final List<String> GEMINI_MODELS = Arrays.asList("gemini-2.0-flash", "gemini-1.5-flash");
     private int currentModelIndex = 0;
 
     public interface GeminiCallback {
@@ -46,9 +46,9 @@ public class GeminiHelper {
         }
 
         String currentModel = GEMINI_MODELS.get(currentModelIndex);
-        callback.onLoading("Using model: " + currentModel);
+        callback.onLoading("Identifying item...");
 
-        Bitmap resizedImage = ImageUtils.resizeBitmap(image, 1200, 1200);
+        Bitmap resizedImage = ImageUtils.resizeBitmap(image, 1024, 1024);
         String base64Image = ImageUtils.bitmapToBase64(resizedImage);
 
         JSONObject json = createJsonRequest(currentModel, base64Image);
@@ -74,11 +74,12 @@ public class GeminiHelper {
                 String resBody = response.body() != null ? response.body().string() : "";
 
                 if (!response.isSuccessful()) {
+                    // Retry logic untuk error server
                     if (response.code() == 404 || response.code() == 503 || response.code() == 429) {
                         currentModelIndex++;
                         tryRequest(image, callback);
                     } else {
-                        callback.onError("API Error " + response.code() + ": " + resBody);
+                        callback.onError("API Error " + response.code());
                     }
                     return;
                 }
@@ -95,7 +96,23 @@ public class GeminiHelper {
 
             JSONArray contents = new JSONArray();
             JSONObject part1 = new JSONObject();
-            part1.put("text", "As a shopping list assistant, identify the main object in this image. Provide a detailed description, a concise title (max 4 words), and a single, most appropriate category for the item, all in English. If the object is not a common shopping item (e.g., a person, an animal, a landscape, abstract art, a vehicle that cannot be purchased in a typical grocery or department store), respond only with the exact phrase 'Not a shopping item detected.' and nothing else. Ensure titles are descriptive, descriptions are informative and cover general uses/characteristics in paragraphs, and categories are precise. Format your response for shopping items as follows:\n\nTitle: [object title]\nDescription: [detailed, paragraph-based description in English]\nCategory: [single English category word/phrase]");
+
+            String prompt = "Act as a smart inventory assistant. Identify the main physical object in this image as a product.\n" +
+                    "Even if the object is a toy, figurine, tool, or spare part, treat it as a shopping item.\n\n" +
+                    "Provide:\n" +
+                    "1. A concise product title (max 5 words).\n" +
+                    "2. A short description (1 sentence).\n" +
+                    "3. A single category chosen STRICTLY from this list:\n" +
+                    "[Fresh Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry & Groceries, Frozen Foods, Snacks & Sweets, Beverages, Household & Cleaning, Personal Care & Health, Baby & Kids, Pet Supplies, Electronics & Office, Clothing & Accessories, Home & Garden, Toys & Hobbies, Automotive & Tools, Sports & Outdoors, General].\n\n" +
+                    "Rules:\n" +
+                    "- If it's an Action Figure/Doll, categorize as 'Toys & Hobbies'.\n" +
+                    "- Only respond with 'Not a shopping item detected' if the image is a selfie of a real human face, a blurred floor, or a vast landscape without objects.\n\n" +
+                    "Format output:\n" +
+                    "Title: [title]\n" +
+                    "Description: [description]\n" +
+                    "Category: [category from list]";
+
+            part1.put("text", prompt);
 
             JSONObject part2 = new JSONObject();
             JSONObject inlineData = new JSONObject();
@@ -111,14 +128,7 @@ public class GeminiHelper {
             contents.put(content);
             json.put("contents", contents);
 
-            json.put("generationConfig", new JSONObject().put("temperature", 0.4));
-
-            JSONArray safetySettings = new JSONArray();
-            JSONObject harmCategory = new JSONObject();
-            harmCategory.put("category", "HARM_CATEGORY_HARASSMENT");
-            harmCategory.put("threshold", "BLOCK_NONE");
-            safetySettings.put(harmCategory);
-            json.put("safetySettings", safetySettings);
+            json.put("generationConfig", new JSONObject().put("temperature", 0.5));
 
             return json;
         } catch (JSONException e) {
@@ -138,8 +148,8 @@ public class GeminiHelper {
                     if (parts != null && parts.length() > 0) {
                         String text = parts.getJSONObject(0).optString("text", "");
 
-                        if (text.trim().equalsIgnoreCase("Not a shopping item detected.")) {
-                            callback.onSuccess("Not a Shopping Item", "The detected object is not recognized as a typical shopping item.", "N/A");
+                        if (text.toLowerCase().contains("not a shopping item")) {
+                            callback.onSuccess("Unknown Item", "Could not identify the object clearly.", "General");
                             return;
                         }
 
@@ -149,16 +159,17 @@ public class GeminiHelper {
 
                         desc = desc.replace("Category:", "").trim();
 
-                        if (!title.isEmpty() || !desc.isEmpty()) {
-                            callback.onSuccess(title, desc, cat);
-                            return;
-                        }
+                        if (title.isEmpty()) title = "Item Detected";
+                        if (cat.isEmpty()) cat = "General";
+
+                        callback.onSuccess(title, desc, cat);
+                        return;
                     }
                 }
             }
-            callback.onError("No description generated.");
+            callback.onError("Could not identify image.");
         } catch (Exception e) {
-            callback.onError("Parsing Error: " + e.getMessage());
+            callback.onError("Parsing Error");
         }
     }
 

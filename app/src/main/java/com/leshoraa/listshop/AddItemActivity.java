@@ -298,17 +298,23 @@ public class AddItemActivity extends AppCompatActivity {
         String name = binding.edtTitle.getText().toString();
         String description = binding.edtDesc.getText().toString();
         String category = binding.edtCategory.getText().toString();
+
+        // Validasi Quantity
         int count;
         try {
-            count = Integer.parseInt(binding.edtQuantity.getText().toString());
+            String qtyString = binding.edtQuantity.getText().toString();
+            if (qtyString.isEmpty()) count = 1;
+            else count = Integer.parseInt(qtyString);
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Invalid quantity amount.", Toast.LENGTH_SHORT).show();
             return;
         }
         if (count < 1) {
-            Toast.makeText(this, "Minimum quantity must be 1 to save the item.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Minimum quantity must be 1.", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // Validasi Price
         double price = 0.0;
         try {
             String priceString = binding.edtPrice.getText().toString().replaceAll("[.]", "");
@@ -319,10 +325,10 @@ public class AddItemActivity extends AppCompatActivity {
             Toast.makeText(this, "Please enter a valid price.", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // Validasi Discount
         String discountsJson = addDiscountData();
-        if (discountsJson == null) {
-            return;
-        }
+        if (discountsJson == null) return;
 
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
         String imageData = null;
@@ -333,14 +339,17 @@ public class AddItemActivity extends AppCompatActivity {
         }
 
         Item newItem = new Item(name, count, false, date);
+        newItem.setItemListId(item_list_id);
+        newItem.setParentListId(parentListIdFromIntent);
+
         newItem.setDescription(description);
         newItem.setCategory(category);
         newItem.setImageData(imageData);
+
         newItem.setPrice(price);
         newItem.setDiscountsJson(discountsJson);
+
         newItem.recalculateFinalPrice();
-        newItem.setItemListId(item_list_id);
-        newItem.setParentListId(parentListIdFromIntent);
 
         long newRowId = dbHelper.addItem(newItem);
         if (newRowId != -1) {

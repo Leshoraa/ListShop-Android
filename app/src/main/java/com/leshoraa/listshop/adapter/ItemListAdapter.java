@@ -73,12 +73,15 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
         Item item = items.get(position);
         holder.binding.tvListTitle.setText(item.getName());
         holder.binding.tvListCategory.setText(item.getCategory());
+
         holder.binding.tvListPrice.setText(decimalFormat.format(item.getFinalPrice()));
-        holder.binding.edtQuantity.setText(String.valueOf(item.getCount()));
 
         if (holder.quantityTextWatcher != null) {
             holder.binding.edtQuantity.removeTextChangedListener(holder.quantityTextWatcher);
         }
+
+        holder.binding.edtQuantity.setText(String.valueOf(item.getCount()));
+
         holder.quantityTextWatcher = new QuantityTextWatcher(holder, item, dbHelper, onItemQuantityChangeListener, decimalFormat);
         holder.binding.edtQuantity.addTextChangedListener(holder.quantityTextWatcher);
 
@@ -247,6 +250,7 @@ public class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ItemVi
                 if (!quantityString.equals("1")) {
                     holder.binding.edtQuantity.setText("1");
                     holder.binding.edtQuantity.setSelection(1);
+                    return;
                 }
             } else if (quantityString.isEmpty()) {
                 newQuantity = 0;
