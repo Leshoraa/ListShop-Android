@@ -8,7 +8,6 @@ import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import java.io.IOException;
 import java.util.List;
 
 public class CameraPreviewManager implements SurfaceHolder.Callback {
@@ -16,6 +15,7 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     private final Activity activity;
     private final SurfaceView surfaceView;
     private Camera camera;
+    private boolean isPreviewRunning = false;
 
     public CameraPreviewManager(Activity activity, SurfaceView surfaceView) {
         this.activity = activity;
@@ -24,23 +24,25 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     }
 
     public void startCamera() {
-        if (surfaceView.getHolder().getSurface() == null) return;
-        try {
-            openCamera(surfaceView.getHolder());
-        } catch (Exception e) {
-            e.printStackTrace();
+        SurfaceHolder holder = surfaceView.getHolder();
+        if (holder.getSurface() != null && holder.getSurface().isValid()) {
+            openCamera(holder);
+            setupCamera(holder);
         }
     }
 
     public void releaseCamera() {
         if (camera != null) {
             try {
-                camera.stopPreview();
+                if (isPreviewRunning) {
+                    camera.stopPreview();
+                }
                 camera.release();
             } catch (Exception e) {
                 // Ignore errors during release
             }
             camera = null;
+            isPreviewRunning = false;
         }
     }
 
@@ -51,28 +53,7 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-        if (camera == null) return; // Guard clause: if camera isn't open, don't touch it
-
-        try {
-            camera.stopPreview();
-        } catch (Exception e) {
-        }
-
-        try {
-            Camera.Parameters parameters = camera.getParameters();
-            if (parameters != null) {
-                Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 3.0);
-                if (optimalSize != null) {
-                    parameters.setPreviewSize(optimalSize.width, optimalSize.height);
-                }
-                camera.setParameters(parameters);
-            }
-
-            camera.setPreviewDisplay(holder);
-            camera.startPreview();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        setupCamera(holder);
     }
 
     @Override
@@ -81,9 +62,9 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     }
 
     private void openCamera(SurfaceHolder holder) {
-        try {
-            if (camera != null) releaseCamera();
+        if (camera != null) return;
 
+        try {
             camera = Camera.open(); // Open default back camera
 
             if (camera == null) {
@@ -91,40 +72,68 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
                 return;
             }
 
-            Camera.Parameters parameters = camera.getParameters();
-
-            if (parameters == null) {
-                return;
-            }
-
-            Camera.Size optimalSize = getOptimalPreviewSize(parameters.getSupportedPreviewSizes(), 4.0 / 3.0);
-            if (optimalSize != null) {
-                parameters.setPreviewSize(optimalSize.width, optimalSize.height);
-            }
-
-            List<String> focusModes = parameters.getSupportedFocusModes();
-            if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-            }
-
-            camera.setParameters(parameters);
-
             setCameraDisplayOrientation(activity, Camera.CameraInfo.CAMERA_FACING_BACK, camera);
             camera.setPreviewDisplay(holder);
-            camera.startPreview();
 
-            adjustAspectRatio(4f/3f);
+            // Adjust aspect ratio after a short delay to ensure layout is ready
+            surfaceView.post(() -> adjustAspectRatio(4f / 3f));
 
         } catch (Exception e) {
             e.printStackTrace();
-            releaseCamera(); // Clean up if opening failed
+            releaseCamera();
             Toast.makeText(activity, "Camera Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
+    private void setupCamera(SurfaceHolder holder) {
+        if (camera == null) return;
+
+        try {
+            if (isPreviewRunning) {
+                camera.stopPreview();
+                isPreviewRunning = false;
+            }
+
+            Camera.Parameters parameters = null;
+            try {
+                parameters = camera.getParameters();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (parameters != null) {
+                List<Camera.Size> supportedSizes = parameters.getSupportedPreviewSizes();
+                Camera.Size optimalSize = getOptimalPreviewSize(supportedSizes, 4.0 / 3.0);
+                if (optimalSize != null) {
+                    parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+                }
+
+                List<String> focusModes = parameters.getSupportedFocusModes();
+                if (focusModes != null && focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                }
+
+                // Call setParameters only if the camera is in a stable state
+                camera.setParameters(parameters);
+            }
+
+            camera.setPreviewDisplay(holder);
+            camera.startPreview();
+            isPreviewRunning = true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Some vendor-specific hooks (like Xiaomi) might throw NPE internally.
+            // We catch it here to prevent app crash, though the camera might not work.
+        }
+    }
+
     private void adjustAspectRatio(float targetRatio) {
-        int parentWidth = surfaceView.getWidth();
-        int parentHeight = surfaceView.getHeight();
+        ViewGroup parent = (ViewGroup) surfaceView.getParent();
+        if (parent == null) return;
+
+        int parentWidth = parent.getWidth();
+        int parentHeight = parent.getHeight();
 
         if (parentWidth == 0 || parentHeight == 0) return;
 
@@ -137,11 +146,14 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
             newWidth = parentWidth;
             newHeight = (int) (parentWidth / targetRatio);
         }
+
         ViewGroup.LayoutParams params = surfaceView.getLayoutParams();
-        params.width = newWidth;
-        params.height = newHeight;
-        surfaceView.setLayoutParams(params);
-        surfaceView.requestLayout();
+        if (params.width != newWidth || params.height != newHeight) {
+            params.width = newWidth;
+            params.height = newHeight;
+            surfaceView.setLayoutParams(params);
+            surfaceView.requestLayout();
+        }
     }
 
     private void setCameraDisplayOrientation(Activity activity, int cameraId, android.hardware.Camera camera) {
@@ -166,7 +178,7 @@ public class CameraPreviewManager implements SurfaceHolder.Callback {
     }
 
     private android.hardware.Camera.Size getOptimalPreviewSize(List<android.hardware.Camera.Size> sizes, double targetRatio) {
-        if (sizes == null) return null; // Null check
+        if (sizes == null) return null;
 
         final double ASPECT_TOLERANCE = 0.1;
         android.hardware.Camera.Size optimalSize = null;

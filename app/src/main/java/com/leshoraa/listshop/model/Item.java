@@ -41,26 +41,29 @@ public class Item implements Serializable {
     }
 
     public void recalculateFinalPrice() {
-        double baseTotalPrice = this.price * this.count;
+        // baseTotalPrice is the price of ONE item
+        double unitPrice = this.price;
 
-        double totalDiscount = 0.0;
+        double totalDiscountPercent = 0.0;
         if (this.discountsJson != null && !this.discountsJson.isEmpty()) {
             try {
                 JSONArray jsonArray = new JSONArray(this.discountsJson);
                 for (int i = 0; i < jsonArray.length(); i++) {
-                    totalDiscount += jsonArray.getDouble(i);
+                    totalDiscountPercent += jsonArray.getDouble(i);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
 
-        if (totalDiscount > 100) totalDiscount = 100;
-        this.totalDiscountPercentage = totalDiscount;
+        if (totalDiscountPercent > 100) totalDiscountPercent = 100;
+        this.totalDiscountPercentage = totalDiscountPercent;
 
-        double discountAmount = baseTotalPrice * (totalDiscount / 100.0);
+        double unitDiscountAmount = unitPrice * (totalDiscountPercent / 100.0);
+        double unitFinalPrice = unitPrice - unitDiscountAmount;
 
-        this.finalPrice = baseTotalPrice - discountAmount;
+        // finalPrice should represent the total price for all items in this row
+        this.finalPrice = unitFinalPrice * this.count;
     }
 
     public int getId() { return id; }

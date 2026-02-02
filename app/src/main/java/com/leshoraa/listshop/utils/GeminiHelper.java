@@ -20,7 +20,7 @@ public class GeminiHelper {
 
     private final String apiKey;
     private final OkHttpClient client;
-    private final List<String> GEMINI_MODELS = Arrays.asList("gemini-2.0-flash", "gemini-1.5-flash");
+    private final List<String> GEMINI_MODELS = Arrays.asList("gemini-2.5-flash", "gemini-3.0-flash");
     private int currentModelIndex = 0;
 
     public interface GeminiCallback {

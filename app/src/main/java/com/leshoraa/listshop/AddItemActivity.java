@@ -69,8 +69,8 @@ public class AddItemActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSIONS = 10;
 
     private ActivityResultLauncher<Intent> takePictureLauncher;
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Runnable enforceMaxDiscountRunnable = this::enforceMaxDiscount;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable enforceMaxDiscountRunnable = this::enforceMaxDiscount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +93,7 @@ public class AddItemActivity extends AppCompatActivity {
         setupDiscountRecyclerView();
         setupTakePictureLauncher();
         setupDropdownMenu();
+        setupCategoryPicker();
 
         cameraPreviewManager = new CameraPreviewManager(this, binding.cameraPreview);
 
@@ -105,6 +106,14 @@ public class AddItemActivity extends AppCompatActivity {
         super.onResume();
         if (allPermissionsGranted()) {
             cameraPreviewManager.startCamera();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (cameraPreviewManager != null) {
+            cameraPreviewManager.releaseCamera();
         }
     }
 
@@ -165,12 +174,6 @@ public class AddItemActivity extends AppCompatActivity {
         window.setStatusBarColor(Color.WHITE);
         window.setNavigationBarColor(Color.WHITE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            window.getDecorView().setSystemUiVisibility(
-                    window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            );
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (window.getDecorView().getWindowInsetsController() != null) {
                 window.getDecorView().getWindowInsetsController().setSystemBarsAppearance(
@@ -182,6 +185,10 @@ public class AddItemActivity extends AppCompatActivity {
                         WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
                 );
             }
+        } else {
+            window.getDecorView().setSystemUiVisibility(
+                    window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            );
         }
     }
 
@@ -326,9 +333,9 @@ public class AddItemActivity extends AppCompatActivity {
             return;
         }
 
-        // Validasi Discount
+        // Validasi Discount (Optional)
         String discountsJson = addDiscountData();
-        if (discountsJson == null) return;
+        if ("INVALID".equals(discountsJson)) return;
 
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
         String imageData = null;
@@ -347,7 +354,7 @@ public class AddItemActivity extends AppCompatActivity {
         newItem.setImageData(imageData);
 
         newItem.setPrice(price);
-        newItem.setDiscountsJson(discountsJson);
+        newItem.setDiscountsJson(discountsJson.isEmpty() ? null : discountsJson);
 
         newItem.recalculateFinalPrice();
 
@@ -393,21 +400,102 @@ public class AddItemActivity extends AppCompatActivity {
 
         discountAdapter.setOnAddButtonClickListener(() -> {
             if (!discountItems.isEmpty()) {
-                String lastItemValue = discountItems.get(discountItems.size() - 1);
-                if (lastItemValue.trim().isEmpty()) {
-                    Toast.makeText(AddItemActivity.this, "Please fill the current discount field first.", Toast.LENGTH_SHORT).show();
+                String lastItemVal = discountItems.get(discountItems.size() - 1);
+                if (lastItemVal.isEmpty()) {
+                    Toast.makeText(this, "Please fill existing discount field.", Toast.LENGTH_SHORT).show();
                     return;
                 }
             }
             discountItems.add("");
-            discountAdapter.notifyDataSetChanged();
+            discountAdapter.notifyItemInserted(discountItems.size() - 1);
             binding.rvEdtDiscount.scrollToPosition(discountItems.size() - 1);
-            binding.rvEdtDiscount.post(this::enforceMaxDiscount);
         });
     }
 
+    private int calculateDiscountColumns(int columnWidthDp) {
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        float screenWidthDp = displayMetrics.widthPixels / displayMetrics.density;
+        int noOfColumns = (int) (screenWidthDp / columnWidthDp);
+        return Math.max(noOfColumns, 2);
+    }
+
+    private String addDiscountData() {
+        JSONArray jsonArray = new JSONArray();
+        for (String discount : discountItems) {
+            String trimmed = discount.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    double val = Double.parseDouble(trimmed);
+                    if (val > 100) {
+                        Toast.makeText(this, "Discount cannot exceed 100%.", Toast.LENGTH_SHORT).show();
+                        return "INVALID";
+                    }
+                    try {
+                        jsonArray.put(val);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        return "INVALID";
+                    }
+                } catch (NumberFormatException e) {
+                    Toast.makeText(this, "Invalid discount value: " + trimmed, Toast.LENGTH_SHORT).show();
+                    return "INVALID";
+                }
+            }
+        }
+        return jsonArray.length() > 0 ? jsonArray.toString() : "";
+    }
+
+    private void enforceMaxDiscount() {
+        boolean changed = false;
+        for (int i = 0; i < discountItems.size(); i++) {
+            String val = discountItems.get(i);
+            if (!val.isEmpty()) {
+                try {
+                    double dVal = Double.parseDouble(val);
+                    if (dVal > 100) {
+                        discountItems.set(i, "100");
+                        changed = true;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        if (changed) {
+            discountAdapter.notifyDataSetChanged();
+            Toast.makeText(this, "Max discount is 100%", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setupTakePictureLauncher() {
+        takePictureLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Bundle extras = result.getData().getExtras();
+                        if (extras != null) {
+                            capturedImageBitmap = (Bitmap) extras.get("data");
+                            if (capturedImageBitmap != null) {
+                                binding.imageViewCaptured.setImageBitmap(capturedImageBitmap);
+                                binding.imageViewCaptured.setVisibility(View.VISIBLE);
+                                binding.cameraPreview.setVisibility(View.GONE);
+                                if (binding.switchAi.isChecked()) {
+                                    analyzeImage(capturedImageBitmap);
+                                }
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (getPackageManager().resolveActivity(takePictureIntent, 0) != null) {
+            takePictureLauncher.launch(takePictureIntent);
+        }
+    }
+
     private void setupDropdownMenu() {
-        binding.dropdownMenu.setOnClickListener(v -> {
+        View.OnClickListener listener = v -> {
             PopupMenu popup = new PopupMenu(AddItemActivity.this, v);
             popup.getMenu().add("Remove title");
             popup.getMenu().add("Remove Description");
@@ -440,102 +528,25 @@ public class AddItemActivity extends AppCompatActivity {
                 }
             });
             popup.show();
+        };
+        binding.dropdownMenu.setOnClickListener(listener);
+        binding.tvDropdownMenu.setOnClickListener(listener);
+    }
+
+    private void setupCategoryPicker() {
+        binding.edtCategory.setOnClickListener(v -> {
+            PopupMenu popupMenu = new PopupMenu(AddItemActivity.this, v);
+            popupMenu.getMenu().add("Food & Drinks");
+            popupMenu.getMenu().add("Health & Beauty");
+            popupMenu.getMenu().add("Household");
+            popupMenu.getMenu().add("Electronics");
+            popupMenu.getMenu().add("Others");
+
+            popupMenu.setOnMenuItemClickListener(item -> {
+                binding.edtCategory.setText(item.getTitle());
+                return true;
+            });
+            popupMenu.show();
         });
-    }
-
-    private int calculateDiscountColumns(int itemWidthDp) {
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        float screenWidthDp = displayMetrics.widthPixels / displayMetrics.density;
-        int calculatedColumns = (int) (screenWidthDp / itemWidthDp);
-        return Math.max(calculatedColumns, 1);
-    }
-
-    private String addDiscountData() {
-        JSONArray discountsJsonArray = new JSONArray();
-        for (int i = 0; i < discountAdapter.getItemCount(); i++) {
-            String discountStr = discountAdapter.getDiscountAt(i);
-            if (discountStr != null && !discountStr.trim().isEmpty()) {
-                try {
-                    double discountValue = Double.parseDouble(discountStr);
-                    if (discountValue < 0 || discountValue > 100) {
-                        Toast.makeText(this, "Discount must be between 0 and 100.", Toast.LENGTH_SHORT).show();
-                        return null;
-                    }
-                    discountsJsonArray.put(discountValue);
-                } catch (NumberFormatException | JSONException e) {
-                    Toast.makeText(this, "Invalid discount value: " + discountStr, Toast.LENGTH_SHORT).show();
-                    return null;
-                }
-            }
-        }
-        return discountsJsonArray.toString();
-    }
-
-    private void enforceMaxDiscount() {
-        double totalCurrentDiscount = 0.0;
-        for (int i = 0; i < discountItems.size(); i++) {
-            try {
-                if (!discountItems.get(i).isEmpty()) {
-                    double discountValue = Double.parseDouble(discountItems.get(i));
-                    totalCurrentDiscount += discountValue;
-                }
-            } catch (NumberFormatException e) {
-            }
-        }
-        if (totalCurrentDiscount > 100.0) {
-            Toast.makeText(this, "Total discount cannot exceed 100%. Adjusting discounts.", Toast.LENGTH_LONG).show();
-            double excess = totalCurrentDiscount - 100.0;
-            if (!discountItems.isEmpty()) {
-                try {
-                    if (!discountItems.get(0).isEmpty()) {
-                        double firstDiscount = Double.parseDouble(discountItems.get(0));
-                        double newFirstDiscount = Math.max(0, firstDiscount - excess);
-                        discountItems.set(0, String.valueOf(newFirstDiscount));
-                    }
-                } catch (NumberFormatException e) {
-                    discountItems.set(0, "100");
-                }
-            } else {
-                discountItems.add("100");
-            }
-            discountAdapter.notifyDataSetChanged();
-        }
-    }
-
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        try {
-            takePictureLauncher.launch(takePictureIntent);
-        } catch (Exception e) {
-            Toast.makeText(this, "Cannot open camera app", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void setupTakePictureLauncher() {
-        takePictureLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                Bundle extras = result.getData().getExtras();
-                if (extras != null) {
-                    capturedImageBitmap = (Bitmap) extras.get("data");
-                    binding.imageViewCaptured.setImageBitmap(capturedImageBitmap);
-                    binding.imageViewCaptured.setVisibility(View.VISIBLE);
-                    binding.cameraPreview.setVisibility(View.GONE);
-                    binding.edtQuantity.setText("1");
-
-                    if (binding.switchAi.isChecked()) {
-                        analyzeImage(capturedImageBitmap);
-                    }
-                }
-            }
-        });
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (cameraPreviewManager != null) {
-            cameraPreviewManager.releaseCamera();
-        }
-        dbHelper.close();
     }
 }
